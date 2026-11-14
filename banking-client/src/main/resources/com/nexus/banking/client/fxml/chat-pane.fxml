@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.nexus.banking.client.controller.ChatPaneController">
+    <top>
+        <VBox>
+            <HBox styleClass="band" alignment="CENTER_LEFT" spacing="12" minHeight="68">
+                <padding><Insets top="10" right="20" bottom="10" left="24" /></padding>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label fx:id="roomTitle" styleClass="title-md" />
+                    <Label fx:id="roomSubtitle" styleClass="text-muted" />
+                </VBox>
+                <ToggleButton fx:id="findButton" text="Find" styleClass="btn-icon" onAction="#onToggleFind" />
+                <Button fx:id="membersButton" text="Members" styleClass="btn-icon" onAction="#onMembers" />
+                <MenuButton fx:id="moreButton" text="More">
+                    <items>
+                        <MenuItem text="Leave this room" onAction="#onLeave" />
+                        <MenuItem text="Refresh rooms" onAction="#onRefresh" />
+                    </items>
+                </MenuButton>
+            </HBox>
+            <HBox fx:id="searchBar" spacing="10" alignment="CENTER_LEFT" managed="false" visible="false" styleClass="band">
+                <padding><Insets top="8" right="24" bottom="8" left="24" /></padding>
+                <TextField fx:id="searchField" promptText="Find in the messages loaded for this room" HBox.hgrow="ALWAYS" />
+                <Label fx:id="searchResult" styleClass="text-faint" />
+            </HBox>
+            <HBox fx:id="notice" styleClass="banner-warn" managed="false" visible="false">
+                <Label fx:id="noticeLabel" wrapText="true" />
+            </HBox>
+        </VBox>
+    </top>
+    <center>
+        <StackPane>
+            <ListView fx:id="messageList" />
+            <VBox fx:id="emptyState" alignment="CENTER" spacing="10" visible="false" managed="false">
+                <Label text="Join a room to start chatting" styleClass="empty-title" />
+                <Label text="Rooms you join appear in the left column. Pick one, or browse every room." styleClass="text-muted" />
+                <Button text="Browse rooms" styleClass="btn-primary" onAction="#onMembers" />
+            </VBox>
+            <Label fx:id="noMessages" text="No messages yet. Say hello." styleClass="text-faint" visible="false" managed="false" />
+        </StackPane>
+    </center>
+    <bottom>
+        <VBox styleClass="composer" spacing="6">
+            <!-- Attachment preview chip/bar -->
+            <HBox fx:id="attachmentBar" spacing="10" alignment="CENTER_LEFT" managed="false" visible="false" styleClass="attachment-bar">
+                <padding><Insets top="4" right="8" bottom="4" left="8" /></padding>
+                <Label text="📎" styleClass="text-accent" />
+                <Label fx:id="attachmentName" text="file.txt" styleClass="text-strong" />
+                <Label fx:id="attachmentSize" text="0 KB" styleClass="text-muted" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="removeAttachmentBtn" text="✕" styleClass="btn-icon" onAction="#onRemoveAttachment" />
+            </HBox>
+            <HBox spacing="10" alignment="BOTTOM_LEFT">
+                <Button fx:id="attachButton" text="📎" styleClass="btn-icon" onAction="#onAttachFile" />
+                <TextArea fx:id="input" promptText="Write a message" prefRowCount="1" wrapText="true" HBox.hgrow="ALWAYS" onKeyPressed="#onKey" />
+                <MenuButton fx:id="emojiButton" text="Emoji" />
+                <Button fx:id="sendButton" text="&#10148;" styleClass="btn-send" onAction="#onSend" />
+            </HBox>
+            <HBox>
+                <Label text="Enter sends, Shift+Enter starts a new line" styleClass="text-faint" maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+                <Label fx:id="counter" styleClass="text-faint" />
+            </HBox>
+        </VBox>
+    </bottom>
+</BorderPane>

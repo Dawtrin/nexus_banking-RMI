@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.nexus.banking.client.ui.MeshPane?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.nexus.banking.client.controller.LoginController" styleClass="app-shell">
+    <StackPane styleClass="login-hero" HBox.hgrow="ALWAYS" minWidth="360">
+        <MeshPane />
+        <VBox alignment="TOP_LEFT" spacing="10" maxWidth="420" StackPane.alignment="TOP_LEFT">
+            <padding><Insets top="44" left="48" right="24" bottom="24" /></padding>
+            <StackPane styleClass="brand-mark" minWidth="52" minHeight="52" maxWidth="52" maxHeight="52" alignment="CENTER">
+                <Label text="N" styleClass="brand-mark-text" style="-fx-font-size: 28px;" />
+            </StackPane>
+            <Label text="NEXUS // CHAT" styleClass="title-xl" />
+            <Label text="Distributed chat with Opera GX cyber aesthetic &amp; active peer replication." styleClass="text-muted" wrapText="true" />
+        </VBox>
+    </StackPane>
+    <VBox styleClass="login-form" alignment="CENTER_LEFT" spacing="14" minWidth="440" prefWidth="460" maxWidth="460">
+        <padding><Insets top="32" right="48" bottom="32" left="48" /></padding>
+        <Label text="Sign in" styleClass="title-lg" />
+        <Label text="Pick a username and the server you want to join." styleClass="text-muted" wrapText="true" />
+        <VBox spacing="6">
+            <Label text="Username" styleClass="form-label" />
+            <TextField fx:id="usernameField" promptText="For example Linh, or a team name" onAction="#onSignIn" />
+        </VBox>
+        <VBox spacing="6">
+            <Label text="Server" styleClass="form-label" />
+            <ComboBox fx:id="serverCombo" maxWidth="Infinity" />
+        </VBox>
+        <HBox fx:id="customRow" spacing="10" managed="false" visible="false">
+            <VBox spacing="6" HBox.hgrow="ALWAYS">
+                <Label text="Address" styleClass="form-label" />
+                <TextField fx:id="hostField" promptText="192.168.1.10" />
+            </VBox>
+            <VBox spacing="6" prefWidth="92">
+                <Label text="Port" styleClass="form-label" />
+                <TextField fx:id="portField" promptText="1099" />
+            </VBox>
+        </HBox>
+        <VBox spacing="6">
+            <CheckBox fx:id="rememberCheck" text="Remember this connection" />
+            <CheckBox fx:id="sslCheck" text="Use TLS / SSL encryption (secure)" />
+        </VBox>
+        <HBox fx:id="errorBanner" styleClass="banner-error" managed="false" visible="false">
+            <Label fx:id="errorLabel" wrapText="true" />
+        </HBox>
+        <Button fx:id="signInButton" text="Sign in" onAction="#onSignIn" styleClass="btn-primary" maxWidth="Infinity" defaultButton="true" />
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <ProgressIndicator fx:id="progress" visible="false" managed="false" prefWidth="18" prefHeight="18" />
+            <Label fx:id="statusLabel" styleClass="text-faint" wrapText="true" />
+        </HBox>
+        <Label fx:id="securityNoticeLabel" text="Usernames are not passwords: anyone can pick any name." styleClass="text-faint" wrapText="true" />
+    </VBox>
+</HBox>

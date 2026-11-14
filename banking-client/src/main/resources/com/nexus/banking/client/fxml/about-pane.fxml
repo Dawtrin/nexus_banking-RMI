@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.nexus.banking.client.controller.AboutPaneController">
+    <VBox styleClass="band" minHeight="68" alignment="CENTER_LEFT">
+        <padding><Insets top="10" right="24" bottom="10" left="24" /></padding>
+        <Label text="About" styleClass="title-md" />
+        <Label text="NEXUS CHAT // GX EDITION" styleClass="text-muted" />
+    </VBox>
+    <VBox spacing="14" maxWidth="560">
+        <padding><Insets top="32" right="32" bottom="32" left="32" /></padding>
+        <HBox spacing="16" alignment="CENTER_LEFT">
+            <StackPane styleClass="brand-mark" minWidth="56" minHeight="56" maxWidth="56" maxHeight="56"><Label text="N" styleClass="brand-mark-text" style="-fx-font-size: 30px;" /></StackPane>
+            <VBox><Label text="NEXUS // GX" styleClass="title-lg" /><Label fx:id="versionLabel" styleClass="about-version" /></VBox>
+        </HBox>
+        <Label text="A chat that runs on two servers. Each server keeps its own database and sends every message to the other, so conversations continue if one server stops and catch up when it returns." styleClass="text-muted" wrapText="true" />
+        <VBox spacing="6">
+            <Label text="This session" styleClass="form-label" />
+            <Label fx:id="sessionLabel" styleClass="text-mono" wrapText="true" />
+        </VBox>
+        <VBox spacing="6">
+            <Label text="Built with" styleClass="form-label" />
+            <Label fx:id="techLabel" styleClass="text-mono" wrapText="true" />
+        </VBox>
+        <Label text="Distributed Systems &amp; Opera GX Architecture, 2026" styleClass="text-faint" />
+    </VBox>
+</VBox>

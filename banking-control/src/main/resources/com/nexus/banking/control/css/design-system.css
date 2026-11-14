@@ -1,0 +1,518 @@
+/* ==========================================================================
+   NEXUS GX DESIGN SYSTEM — OPERA GX / OPERA BROWSER DNA
+   Void Black / Panel Graphite / GX Neon Red Accent / Cyber Telemetry
+   ========================================================================== */
+
+.root {
+    /* --- Core Palette Tokens --- */
+    -ink: #0B0B0D;              /* Void Black: pure deep space background */
+    -panel: #131317;            /* Panel Graphite: sleek dark sidebar / toolbar */
+    -raised: #1C1C24;           /* Elevated Surface: modular cards, dialogs, inputs */
+    -raised-hover: #262632;     /* Elevated Hover surface */
+    -line: #2D2D38;             /* Crisp 1px border graphite */
+    -line-bright: #3D3D4E;      /* Active / highlighted border */
+    -text: #F4F4F6;             /* Ice White text: ultra-sharp high contrast */
+    -muted: #A1A1AA;            /* Muted Zinc: secondary labels, hints */
+    -faint: #71717A;            /* Tech Subtle: timestamps, metadata */
+
+    /* --- Opera GX Neon Red Accents --- */
+    -gx-red: #FA174A;           /* Iconic Opera GX Neon Red */
+    -gx-red-hover: #FF2E63;     /* Brighter glowing red on hover */
+    -gx-red-dim: #B3123A;       /* Dark crimson backing */
+    -gx-red-glow: rgba(250, 23, 74, 0.35); /* Focus / shadow glow */
+    -accent: #FA174A;
+
+    /* --- Cyber & Telemetry Accents --- */
+    -cyan: #00F0FF;             /* Cyber Cyan: network telemetry, ping, RMI link */
+    -ok: #22C55E;               /* Matrix Green: online, synchronized, success */
+    -warn: #F59E0B;             /* Warning Amber: degraded, reconnecting */
+    -danger: #EF4444;           /* Error Crimson: offline, dead-lettered */
+
+    /* Compatibility aliases */
+    -blue: #00F0FF;
+    -violet: #FA174A;
+    -violet-soft: #FF2E63;
+
+    /* --- Typography & Base Defaults --- */
+    -fx-font-family: "Segoe UI", "Inter", "Roboto", "Helvetica Neue", "Arial", sans-serif;
+    -fx-font-size: 13px;
+    -fx-base: #1C1C24;
+    -fx-background: #0B0B0D;
+    -fx-control-inner-background: #1C1C24;
+    -fx-accent: #FA174A;
+    -fx-focus-color: #FA174A;
+    -fx-faint-focus-color: transparent;
+    -fx-text-fill: -text;
+    -fx-highlight-fill: #FA174A;
+    -fx-highlight-text-fill: #FFFFFF;
+}
+
+.root.font-small { -fx-font-size: 12px; }
+.root.font-large { -fx-font-size: 15px; }
+
+/* Base App Shell & Bands */
+.label { -fx-text-fill: -text; }
+.app-shell { -fx-background-color: -ink; }
+.sidebar {
+    -fx-background-color: -panel;
+    -fx-border-color: transparent -line transparent transparent;
+    -fx-border-width: 0 1 0 0;
+}
+.band {
+    -fx-background-color: -panel;
+    -fx-border-color: transparent transparent -line transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.band-top {
+    -fx-background-color: -panel;
+    -fx-border-color: -line transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+.hairline {
+    -fx-border-color: -line transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* Type Scale */
+.title-xl {
+    -fx-font-size: 2.3em;
+    -fx-font-weight: 800;
+    -fx-text-fill: -text;
+    -fx-letter-spacing: 0.5px;
+}
+.title-lg {
+    -fx-font-size: 1.45em;
+    -fx-font-weight: 700;
+    -fx-text-fill: -text;
+    -fx-letter-spacing: 0.25px;
+}
+.title-md {
+    -fx-font-size: 1.15em;
+    -fx-font-weight: 600;
+    -fx-text-fill: -text;
+}
+.text-muted { -fx-text-fill: -muted; }
+.text-faint { -fx-text-fill: -faint; -fx-font-size: 0.92em; }
+.text-mono {
+    -fx-font-family: "Cascadia Mono", "Consolas", "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    -fx-font-size: 0.92em;
+}
+.text-accent, .text-violet { -fx-text-fill: -gx-red; }
+.text-cyan { -fx-text-fill: -cyan; }
+.form-label {
+    -fx-text-fill: -muted;
+    -fx-font-weight: 700;
+    -fx-font-size: 0.88em;
+    -fx-letter-spacing: 0.5px;
+}
+
+/* Opera GX Style Brand Badge */
+.brand-mark {
+    -fx-background-color: linear-gradient(to bottom right, #FA174A, #9E002B);
+    -fx-background-radius: 6;
+    -fx-border-color: rgba(255, 255, 255, 0.2);
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.5), 10, 0, 0, 2);
+}
+.brand-mark-text {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: 900;
+    -fx-font-family: "Segoe UI", "Inter", sans-serif;
+}
+
+/* Controls: Text Fields, Passwords, Combo Boxes, Text Areas */
+.text-field, .password-field, .combo-box-base, .text-area {
+    -fx-background-color: #16161C;
+    -fx-border-color: -line;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-text-fill: -text;
+    -fx-prompt-text-fill: -faint;
+    -fx-padding: 8 12;
+}
+.text-field:focused, .password-field:focused, .text-area:focused, .combo-box-base:focused {
+    -fx-border-color: -gx-red;
+    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.4), 6, 0, 0, 0);
+}
+.text-field:disabled, .combo-box-base:disabled { -fx-opacity: 0.5; }
+.combo-box .list-cell {
+    -fx-text-fill: -text;
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.combo-box-popup .list-view {
+    -fx-background-color: -raised;
+    -fx-border-color: -line;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 16, 0, 0, 8);
+}
+.combo-box-popup .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -text;
+    -fx-padding: 8 12;
+}
+.combo-box-popup .list-cell:filled:hover, .combo-box-popup .list-cell:filled:selected {
+    -fx-background-color: #262632;
+    -fx-text-fill: #FFFFFF;
+}
+.text-area {
+    -fx-control-inner-background: #16161C;
+    -fx-padding: 4;
+}
+.text-area .content { -fx-background-color: transparent; }
+.text-area .scroll-pane, .text-area .scroll-pane .viewport { -fx-background-color: transparent; }
+
+.check-box { -fx-text-fill: -muted; -fx-cursor: hand; }
+.check-box .box {
+    -fx-background-color: #16161C;
+    -fx-border-color: -line;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.check-box:selected .box {
+    -fx-background-color: -gx-red;
+    -fx-border-color: -gx-red;
+    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.4), 4, 0, 0, 0);
+}
+.check-box:selected .mark {
+    -fx-background-color: white;
+}
+
+/* Opera GX Action Buttons */
+.btn-primary, .btn-secondary, .btn-ghost, .btn-danger, .btn-icon, .btn-send {
+    -fx-cursor: hand;
+    -fx-font-weight: 700;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 9 18;
+}
+.btn-primary {
+    -fx-background-color: linear-gradient(to right, #FA174A, #FF2E63);
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.35), 8, 0, 0, 2);
+}
+.btn-primary:hover {
+    -fx-background-color: linear-gradient(to right, #FF2E63, #FF477E);
+    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.6), 12, 0, 0, 3);
+}
+.btn-primary:pressed {
+    -fx-background-color: #D6123D;
+}
+.btn-primary:disabled { -fx-opacity: 0.45; }
+
+.btn-secondary {
+    -fx-background-color: -raised;
+    -fx-border-color: -line;
+    -fx-border-width: 1;
+    -fx-text-fill: -text;
+}
+.btn-secondary:hover {
+    -fx-background-color: -raised-hover;
+    -fx-border-color: -gx-red;
+    -fx-text-fill: #FFFFFF;
+}
+.btn-ghost {
+    -fx-background-color: transparent;
+    -fx-text-fill: -muted;
+    -fx-padding: 6 10;
+}
+.btn-ghost:hover {
+    -fx-background-color: -raised;
+    -fx-text-fill: -gx-red;
+}
+.btn-danger {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(239, 68, 68, 0.5);
+    -fx-text-fill: -danger;
+}
+.btn-danger:hover {
+    -fx-background-color: rgba(239, 68, 68, 0.15);
+    -fx-border-color: -danger;
+}
+.btn-secondary:disabled, .btn-danger:disabled, .btn-ghost:disabled { -fx-opacity: 0.45; }
+.btn-icon {
+    -fx-background-color: transparent;
+    -fx-text-fill: -muted;
+    -fx-padding: 7 11;
+}
+.btn-icon:hover, .toggle-button.btn-icon:selected {
+    -fx-background-color: -raised;
+    -fx-text-fill: -text;
+}
+.btn-send {
+    -fx-background-color: linear-gradient(to bottom right, #FA174A, #D6123D);
+    -fx-text-fill: white;
+    -fx-background-radius: 6;
+    -fx-min-width: 44;
+    -fx-min-height: 44;
+    -fx-padding: 0;
+    -fx-font-size: 1.2em;
+    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.45), 8, 0, 0, 2);
+}
+.btn-send:hover {
+    -fx-background-color: linear-gradient(to bottom right, #FF2E63, #FA174A);
+    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.7), 12, 0, 0, 3);
+}
+.btn-send:disabled { -fx-opacity: 0.4; }
+.button:focused, .toggle-button:focused {
+    -fx-border-color: -gx-red;
+    -fx-border-width: 1;
+}
+
+/* Opera Sidebar Rail Navigation */
+.nav-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: -muted;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 10 14;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+    -fx-font-weight: 600;
+    -fx-border-width: 0;
+}
+.nav-item:hover {
+    -fx-background-color: -raised;
+    -fx-text-fill: -text;
+}
+.nav-item:selected {
+    -fx-background-color: rgba(250, 23, 74, 0.12);
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: transparent transparent transparent -gx-red;
+    -fx-border-width: 0 0 0 3;
+    -fx-border-radius: 0 4 4 0;
+    -fx-font-weight: 700;
+}
+
+/* Chips & Presence Status Pills */
+.chip {
+    -fx-background-radius: 4;
+    -fx-padding: 2 10;
+    -fx-font-size: 0.9em;
+    -fx-font-weight: 700;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+}
+.chip-ok {
+    -fx-background-color: rgba(34, 197, 94, 0.15);
+    -fx-text-fill: -ok;
+    -fx-border-color: rgba(34, 197, 94, 0.35);
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+}
+.chip-warn {
+    -fx-background-color: rgba(245, 158, 11, 0.15);
+    -fx-text-fill: -warn;
+    -fx-border-color: rgba(245, 158, 11, 0.35);
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+}
+.chip-danger {
+    -fx-background-color: rgba(239, 68, 68, 0.15);
+    -fx-text-fill: -danger;
+    -fx-border-color: rgba(239, 68, 68, 0.35);
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+}
+.chip-neutral {
+    -fx-background-color: rgba(161, 161, 170, 0.12);
+    -fx-text-fill: -muted;
+    -fx-border-color: rgba(161, 161, 170, 0.25);
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+}
+.chip-count {
+    -fx-background-color: -gx-red;
+    -fx-text-fill: white;
+    -fx-background-radius: 4;
+    -fx-padding: 0 7;
+    -fx-font-size: 0.85em;
+    -fx-font-weight: 700;
+}
+
+/* Banners and Empty States */
+.banner-error {
+    -fx-background-color: rgba(239, 68, 68, 0.12);
+    -fx-border-color: rgba(239, 68, 68, 0.5);
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 10 12;
+}
+.banner-error .label { -fx-text-fill: -danger; }
+.banner-warn {
+    -fx-background-color: rgba(245, 158, 11, 0.12);
+    -fx-border-color: rgba(245, 158, 11, 0.5);
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 10 12;
+}
+.banner-warn .label { -fx-text-fill: -warn; }
+.empty-title {
+    -fx-font-size: 1.3em;
+    -fx-font-weight: 700;
+    -fx-text-fill: -text;
+}
+
+/* Lists and Views */
+.list-view {
+    -fx-background-color: transparent;
+    -fx-control-inner-background: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+.list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -text;
+    -fx-padding: 0;
+}
+.list-view .list-cell:empty { -fx-background-color: transparent; }
+.list-view .list-cell:filled:hover {
+    -fx-background-color: rgba(38, 38, 50, 0.6);
+}
+.list-view .list-cell:filled:selected {
+    -fx-background-color: rgba(250, 23, 74, 0.15);
+    -fx-border-color: transparent transparent transparent -gx-red;
+    -fx-border-width: 0 0 0 2;
+}
+.scroll-pane, .scroll-pane > .viewport { -fx-background-color: transparent; }
+.scroll-bar { -fx-background-color: transparent; }
+.scroll-bar .thumb {
+    -fx-background-color: #2D2D38;
+    -fx-background-radius: 4;
+}
+.scroll-bar .thumb:hover {
+    -fx-background-color: -gx-red;
+}
+.scroll-bar .increment-button, .scroll-bar .decrement-button {
+    -fx-padding: 0; -fx-pref-height: 0; -fx-pref-width: 0;
+}
+.scroll-bar:vertical { -fx-pref-width: 8; }
+.scroll-bar:horizontal { -fx-pref-height: 8; }
+
+/* Opera GX Messenger Stream (Chat Bubbles) */
+.msg-name {
+    -fx-font-weight: 700;
+    -fx-text-fill: #FFFFFF;
+}
+.msg-meta {
+    -fx-text-fill: -faint;
+    -fx-font-size: 0.88em;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+}
+.msg-text { -fx-text-fill: -text; }
+.msg-bubble {
+    -fx-background-color: #1C1C24;
+    -fx-border-color: #2A2A34;
+    -fx-border-width: 1;
+    -fx-background-radius: 2 6 6 6;
+    -fx-border-radius: 2 6 6 6;
+    -fx-padding: 9 13;
+}
+.msg-bubble-own {
+    -fx-background-color: #24161C;
+    -fx-border-color: rgba(250, 23, 74, 0.55);
+    -fx-border-width: 1;
+    -fx-background-radius: 6 2 6 6;
+    -fx-border-radius: 6 2 6 6;
+    -fx-padding: 9 13;
+    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.15), 6, 0, 0, 1);
+}
+.via-tag {
+    -fx-text-fill: -faint;
+    -fx-font-size: 0.85em;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+    -fx-border-color: -line;
+    -fx-border-radius: 4;
+    -fx-padding: 0 6;
+}
+
+/* GX Control Hardware / Cluster Telemetry (NEXUS CONTROL) */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-control-inner-background: transparent;
+    -fx-table-cell-border-color: transparent;
+    -fx-border-color: -line;
+    -fx-border-radius: 6;
+}
+.table-view .column-header-background { -fx-background-color: -panel; }
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: -panel;
+    -fx-border-color: transparent transparent -line transparent;
+    -fx-size: 36;
+}
+.table-view .column-header .label {
+    -fx-text-fill: -muted;
+    -fx-font-weight: 700;
+    -fx-font-size: 0.88em;
+    -fx-letter-spacing: 0.5px;
+}
+.table-row-cell {
+    -fx-cell-size: 38px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent rgba(45, 45, 56, 0.6) transparent;
+}
+.table-row-cell:hover { -fx-background-color: rgba(38, 38, 50, 0.7); }
+.table-row-cell:selected {
+    -fx-background-color: rgba(250, 23, 74, 0.18);
+}
+.table-cell {
+    -fx-text-fill: -text;
+    -fx-padding: 0 10;
+    -fx-alignment: CENTER_LEFT;
+}
+.table-view .column-header .label { -fx-alignment: CENTER_LEFT; }
+
+.stat-tile {
+    -fx-background-color: -raised;
+    -fx-border-color: -line;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 14 18;
+}
+.stat-tile:hover {
+    -fx-border-color: -line-bright;
+    -fx-background-color: -raised-hover;
+}
+.stat-value {
+    -fx-font-size: 2.1em;
+    -fx-font-weight: 800;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+.context-menu, .menu-button .context-menu {
+    -fx-background-color: -raised;
+    -fx-border-color: -line;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 16, 0, 0, 8);
+}
+.menu-item:focused {
+    -fx-background-color: #262632;
+}
+.menu-item .label { -fx-text-fill: -text; }
+.menu-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -muted;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+.menu-button:hover {
+    -fx-background-color: -raised;
+    -fx-text-fill: -text;
+}
+.menu-button .label { -fx-text-fill: -muted; }
+.separator .line {
+    -fx-border-color: -line;
+    -fx-border-width: 1 0 0 0;
+}
+.tooltip {
+    -fx-background-color: #1C1C24;
+    -fx-text-fill: -text;
+    -fx-border-color: -gx-red;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0, 0, 2);
+}

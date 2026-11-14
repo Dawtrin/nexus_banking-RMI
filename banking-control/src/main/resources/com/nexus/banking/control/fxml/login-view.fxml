@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.nexus.banking.control.ui.LoginController" styleClass="app-shell">
+    <StackPane fx:id="hero" styleClass="login-hero" HBox.hgrow="ALWAYS" minWidth="340" />
+    <VBox styleClass="login-form" alignment="CENTER_LEFT" spacing="12" minWidth="470" prefWidth="480" maxWidth="480">
+        <padding><Insets top="28" right="46" bottom="28" left="46" /></padding>
+        <Label text="Control sign-in" styleClass="title-lg" />
+        <Label text="Monitor and administer both servers. You need the admin token that was set on the servers." styleClass="text-muted" wrapText="true" />
+        <VBox spacing="6"><Label text="Operator name" styleClass="form-label" /><TextField fx:id="operatorField" promptText="Shown in the audit log" /></VBox>
+        <VBox spacing="6"><Label text="Admin token" styleClass="form-label" /><PasswordField fx:id="tokenField" promptText="NEXUS_ADMIN_TOKEN of the servers" onAction="#onConnect" /></VBox>
+        <HBox spacing="10">
+            <VBox spacing="6" HBox.hgrow="ALWAYS"><Label text="Node A (host:port)" styleClass="form-label" /><TextField fx:id="nodeAField" /></VBox>
+            <VBox spacing="6" HBox.hgrow="ALWAYS"><Label text="Node B (host:port)" styleClass="form-label" /><TextField fx:id="nodeBField" /></VBox>
+        </HBox>
+        <CheckBox fx:id="sslCheck" text="Use TLS / SSL encryption (secure)" />
+        <HBox fx:id="errorBanner" styleClass="banner-error" managed="false" visible="false"><Label fx:id="errorLabel" wrapText="true" /></HBox>
+        <Button fx:id="connectButton" text="Connect" styleClass="btn-primary" maxWidth="Infinity" defaultButton="true" onAction="#onConnect" />
+        <Label fx:id="statusLabel" styleClass="text-faint" wrapText="true" />
+        <Label fx:id="securityNoticeLabel" text="The token is kept in memory only. Traffic is plain TCP by default." styleClass="text-faint" wrapText="true" />
+    </VBox>
+</HBox>

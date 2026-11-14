@@ -1,0 +1,108 @@
+/* NEXUS CHAT // GX EDITION specific styles */
+.login-hero {
+    -fx-background-color: linear-gradient(to bottom right, #180B10, #0B0B0D);
+}
+.login-form {
+    -fx-background-color: -ink;
+}
+.brand-mark {
+    -fx-background-color: linear-gradient(to bottom right, #FA174A, #9E002B);
+    -fx-background-radius: 6;
+    -fx-border-color: rgba(255, 255, 255, 0.2);
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.5), 10, 0, 0, 2);
+}
+.brand-mark-text {
+    -fx-text-fill: white;
+    -fx-font-weight: 900;
+}
+.composer {
+    -fx-background-color: -panel;
+    -fx-border-color: -line transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 14 20;
+}
+.composer .text-area {
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 6 10;
+}
+.room-row-count {
+    -fx-text-fill: -muted;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+    -fx-font-size: 0.88em;
+}
+.about-version {
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+    -fx-text-fill: -gx-red;
+    -fx-font-weight: bold;
+}
+.section-menu .nav-item {
+    -fx-padding: 9 14;
+}
+
+/* Opera GX File Attachments & Cyber Cards */
+.attachment-bar {
+    -fx-background-color: #17171F;
+    -fx-border-color: -gx-red;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 4 10;
+}
+.file-card {
+    -fx-background-color: #15151D;
+    -fx-border-color: #2D2D3B;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12;
+}
+.file-card:hover {
+    -fx-border-color: -gx-red;
+}
+.file-thumbnail {
+    -fx-background-color: #0E0E12;
+    -fx-border-color: #2A2A38;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 4;
+    -fx-alignment: center;
+}
+.file-name {
+    -fx-text-fill: -text;
+    -fx-font-weight: 700;
+    -fx-font-family: "Segoe UI", sans-serif;
+    -fx-font-size: 0.95em;
+}
+.file-size {
+    -fx-text-fill: -muted;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+    -fx-font-size: 0.82em;
+}
+.btn-download {
+    -fx-background-color: -raised;
+    -fx-text-fill: -gx-cyan;
+    -fx-border-color: -gx-cyan;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-font-size: 0.85em;
+    -fx-font-weight: 700;
+    -fx-padding: 4 10;
+    -fx-cursor: hand;
+}
+.btn-download:hover {
+    -fx-background-color: -gx-cyan;
+    -fx-text-fill: #0B0B0D;
+}
+.btn-preset-dot {
+    -fx-background-color: transparent;
+    -fx-padding: 2;
+    -fx-cursor: hand;
+}
+.btn-preset-dot:hover {
+    -fx-background-color: #2D2D3B;
+    -fx-background-radius: 12;
+}

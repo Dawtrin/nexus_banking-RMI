@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.nexus.banking.control.ui.ShellController" styleClass="app-shell">
+    <VBox fx:id="sidebar" styleClass="sidebar" minWidth="232" prefWidth="236" maxWidth="240" />
+    <StackPane fx:id="content" HBox.hgrow="ALWAYS" />
+</HBox>
