@@ -56,7 +56,7 @@ public class ReplicationStatusDTO implements Serializable {
     public Instant getLastSuccessAt() { return lastSuccessAt; }
     public Instant getLastCheckedAt() { return lastCheckedAt; }
     public String getLastError() { return lastError; }
-    /** Highest origin sequence of the peer's messages this node has durably stored. */
+    /** Highest origin sequence of the peer's ledger entries this node has durably stored. */
     public long getInboundCheckpoint() { return inboundCheckpoint; }
     public int getConsecutiveFailures() { return consecutiveFailures; }
 }

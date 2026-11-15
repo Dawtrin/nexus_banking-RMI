@@ -4,7 +4,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
 
-/** Message counters of one fixed-size time bucket (counts of individual messages, never batches). */
+/** Transaction counters of one fixed-size time bucket (counts of individual ledger entries, never batches). */
 public class ThroughputPointDTO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -25,7 +25,7 @@ public class ThroughputPointDTO implements Serializable {
 
     public Instant getBucketStart() { return bucketStart; }
     public int getBucketSeconds() { return bucketSeconds; }
-    /** Messages accepted from local clients in this bucket. */
+    /** Ledger entries created for local customers in this bucket. */
     public int getStored() { return stored; }
     public int getReplicatedIn() { return replicatedIn; }
     public int getReplicatedOut() { return replicatedOut; }

@@ -1,14 +1,19 @@
--- NEXUS Distributed Chat schema v2 (MySQL 8 / MariaDB 10.5+).
+-- NEXUS Distributed Core-Banking schema v1 (MySQL 8 / MariaDB 10.5+).
 -- Applied automatically at server start when database.schema.auto=true (default); every statement is idempotent.
--- Manual use: CREATE DATABASE nexus_chat CHARACTER SET utf8mb4; then run this file against that database
--- (see scripts/init-db.sql). Timestamps are stored as UTC DATETIME(3).
+-- Manual use: CREATE DATABASE nexus_banking CHARACTER SET utf8mb4; then run this file against that database
+-- (see scripts/init-db.sql). Timestamps are stored as UTC DATETIME(3). Each branch node owns its OWN database.
 
-CREATE TABLE IF NOT EXISTS chat_rooms (
-    room_id      VARCHAR(100) NOT NULL,
-    room_name    VARCHAR(200) NOT NULL,
-    description  VARCHAR(500) NULL,
-    created_at   DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    PRIMARY KEY (room_id)
+CREATE TABLE IF NOT EXISTS bank_accounts (
+    account_number VARCHAR(20)   NOT NULL,
+    owner_name     VARCHAR(100)  NOT NULL,
+    balance        DECIMAL(18,2) NOT NULL DEFAULT 0.00,
+    branch_id      VARCHAR(32)   NOT NULL,
+    status         VARCHAR(16)   NOT NULL DEFAULT 'ACTIVE',
+    daily_limit    DECIMAL(18,2) NOT NULL DEFAULT 20000000.00,
+    pin_hash       VARCHAR(200)  NOT NULL,
+    created_at     DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at     DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (account_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS origin_sequences (
@@ -17,31 +22,31 @@ CREATE TABLE IF NOT EXISTS origin_sequences (
     PRIMARY KEY (origin_server_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS chat_messages (
-    local_sequence    BIGINT       NOT NULL AUTO_INCREMENT,
-    message_id        VARCHAR(64)  NOT NULL,
-    room_id           VARCHAR(100) NOT NULL,
-    sender_id         VARCHAR(100) NOT NULL,
-    sender_name       VARCHAR(100) NOT NULL,
-    content           MEDIUMTEXT   NOT NULL,
-    message_type      VARCHAR(16)  NOT NULL DEFAULT 'CHAT',
-    created_at        DATETIME(3)  NOT NULL,
-    origin_server_id  VARCHAR(64)  NOT NULL,
-    origin_sequence   BIGINT       NOT NULL,
-    client_message_id VARCHAR(64)  NULL,
-    sender_avatar     MEDIUMTEXT   NULL,
+CREATE TABLE IF NOT EXISTS bank_transactions (
+    local_sequence    BIGINT        NOT NULL AUTO_INCREMENT,
+    transaction_id    VARCHAR(64)   NOT NULL,
+    account_number    VARCHAR(20)   NOT NULL,
+    transaction_type  ENUM('DEPOSIT','WITHDRAW','TRANSFER','TRANSFER_IN') NOT NULL,
+    amount            DECIMAL(18,2) NOT NULL,
+    balance_after     DECIMAL(18,2) NOT NULL,
+    reference_account VARCHAR(20)   NULL,
+    note              VARCHAR(200)  NOT NULL DEFAULT '',
+    created_at        DATETIME(3)   NOT NULL,
+    origin_server_id  VARCHAR(64)   NOT NULL,
+    origin_sequence   BIGINT        NOT NULL,
+    client_request_id VARCHAR(64)   NULL,
     PRIMARY KEY (local_sequence),
-    UNIQUE KEY uq_message_id (message_id),
+    UNIQUE KEY uq_transaction_id (transaction_id),
     UNIQUE KEY uq_origin_seq (origin_server_id, origin_sequence),
-    UNIQUE KEY uq_client_msg (origin_server_id, sender_id, client_message_id),
-    KEY idx_room_local (room_id, local_sequence),
-    KEY idx_room_display (room_id, created_at, origin_server_id, origin_sequence),
-    CONSTRAINT fk_msg_room FOREIGN KEY (room_id) REFERENCES chat_rooms (room_id)
+    UNIQUE KEY uq_client_request (client_request_id),
+    KEY idx_account_time (account_number, created_at),
+    KEY idx_origin (origin_server_id, origin_sequence),
+    CONSTRAINT fk_txn_account FOREIGN KEY (account_number) REFERENCES bank_accounts (account_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS replication_outbox (
     outbox_id        BIGINT       NOT NULL AUTO_INCREMENT,
-    message_id       VARCHAR(64)  NOT NULL,
+    transaction_id   VARCHAR(64)  NOT NULL,
     target_peer_id   VARCHAR(64)  NOT NULL,
     status           VARCHAR(16)  NOT NULL DEFAULT 'PENDING',
     attempt_count    INT          NOT NULL DEFAULT 0,
@@ -50,41 +55,32 @@ CREATE TABLE IF NOT EXISTS replication_outbox (
     created_at       DATETIME(3)  NOT NULL,
     updated_at       DATETIME(3)  NOT NULL,
     PRIMARY KEY (outbox_id),
-    UNIQUE KEY uq_outbox_msg_peer (message_id, target_peer_id),
+    UNIQUE KEY uq_outbox_txn_peer (transaction_id, target_peer_id),
     KEY idx_outbox_due (target_peer_id, status, next_attempt_at, outbox_id),
-    CONSTRAINT fk_outbox_msg FOREIGN KEY (message_id) REFERENCES chat_messages (message_id)
+    CONSTRAINT fk_outbox_txn FOREIGN KEY (transaction_id) REFERENCES bank_transactions (transaction_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS replication_state (
-    peer_server_id            VARCHAR(64)  NOT NULL,
-    last_replicated_origin_seq BIGINT      NOT NULL DEFAULT 0,
-    last_success_at           DATETIME(3)  NULL,
-    last_sync_status          VARCHAR(16)  NOT NULL DEFAULT 'UNKNOWN',
-    last_error                VARCHAR(500) NULL,
-    updated_at                DATETIME(3)  NOT NULL,
+    peer_server_id             VARCHAR(64)  NOT NULL,
+    last_replicated_origin_seq BIGINT       NOT NULL DEFAULT 0,
+    last_success_at            DATETIME(3)  NULL,
+    last_sync_status           VARCHAR(16)  NOT NULL DEFAULT 'UNKNOWN',
+    last_error                 VARCHAR(500) NULL,
+    updated_at                 DATETIME(3)  NOT NULL,
     PRIMARY KEY (peer_server_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS user_profiles (
-    username       VARCHAR(100) NOT NULL,
-    display_name   VARCHAR(100) NOT NULL,
-    email          VARCHAR(200) NOT NULL DEFAULT '',
-    status         VARCHAR(16)  NOT NULL DEFAULT 'ONLINE',
-    created_at     DATETIME(3)  NOT NULL,
-    last_seen_at   DATETIME(3)  NOT NULL,
-    avatar         MEDIUMTEXT   NULL,
-    PRIMARY KEY (username)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 CREATE TABLE IF NOT EXISTS audit_log (
-    audit_id    BIGINT       NOT NULL AUTO_INCREMENT,
-    occurred_at DATETIME(3)  NOT NULL,
-    server_id   VARCHAR(64)  NOT NULL,
-    actor       VARCHAR(100) NOT NULL,
-    action      VARCHAR(64)  NOT NULL,
-    target      VARCHAR(200) NOT NULL,
-    result      VARCHAR(16)  NOT NULL,
+    audit_id    BIGINT        NOT NULL AUTO_INCREMENT,
+    occurred_at DATETIME(3)   NOT NULL,
+    server_id   VARCHAR(64)   NOT NULL,
+    actor       VARCHAR(100)  NOT NULL,
+    action      VARCHAR(64)   NOT NULL,
+    target      VARCHAR(200)  NOT NULL,
+    result      VARCHAR(16)   NOT NULL,
     details     VARCHAR(1000) NOT NULL DEFAULT '',
+    prev_hash   CHAR(64)      NOT NULL,
+    entry_hash  CHAR(64)      NOT NULL,
     PRIMARY KEY (audit_id),
     KEY idx_audit_time (occurred_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

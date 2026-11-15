@@ -47,7 +47,7 @@ public class DatabaseManager implements AutoCloseable {
             return;
         }
         HikariConfig hc = new HikariConfig();
-        hc.setPoolName("nexus-chat-db");
+        hc.setPoolName("nexus-banking-db");
         hc.setJdbcUrl(config.getJdbcUrl());
         hc.setUsername(config.getUsername());
         hc.setPassword(config.getPassword());

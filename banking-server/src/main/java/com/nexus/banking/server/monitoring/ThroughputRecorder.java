@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 
-/** Ring of fixed 10-second buckets (last hour) counting individual messages. */
+/** Ring of fixed 10-second buckets (last hour) counting individual ledger entries. */
 public final class ThroughputRecorder {
     public static final int BUCKET_SECONDS = 10;
     private static final int MAX_BUCKETS = 360;

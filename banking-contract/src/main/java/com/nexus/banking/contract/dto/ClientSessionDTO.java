@@ -7,101 +7,60 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
-/**
- * Server-tracked client session representing an active or recent desktop connection.
- */
+/** Server-tracked customer session (one per account, enforced cluster-wide) on one branch node. */
 public class ClientSessionDTO implements Serializable {
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private final String sessionId;
-    private final String username;
+    private final String accountNumber;
+    private final String ownerName;
     private final String clientInstanceId;
     private final String remoteIp;
-    private final int remotePort;
     private final Instant connectedAt;
     private final Instant lastSeenAt;
     private final SessionStatus status;
     private final String connectedServerId;
+    private final boolean pushEnabled;
 
-    public ClientSessionDTO(String sessionId,
-                            String username,
-                            String clientInstanceId,
-                            String remoteIp,
-                            int remotePort,
-                            Instant connectedAt,
-                            Instant lastSeenAt,
-                            SessionStatus status,
-                            String connectedServerId) {
-        this.sessionId = Objects.requireNonNull(sessionId, "sessionId cannot be null");
-        this.username = Objects.requireNonNull(username, "username cannot be null");
-        this.clientInstanceId = clientInstanceId != null ? clientInstanceId : "";
-        this.remoteIp = remoteIp != null ? remoteIp : "UNKNOWN";
-        this.remotePort = remotePort;
-        this.connectedAt = connectedAt != null ? connectedAt : Instant.now();
-        this.lastSeenAt = lastSeenAt != null ? lastSeenAt : Instant.now();
-        this.status = status != null ? status : SessionStatus.ACTIVE;
-        this.connectedServerId = connectedServerId != null ? connectedServerId : "UNKNOWN";
+    public ClientSessionDTO(String sessionId, String accountNumber, String ownerName, String clientInstanceId,
+                            String remoteIp, Instant connectedAt, Instant lastSeenAt, SessionStatus status,
+                            String connectedServerId, boolean pushEnabled) {
+        this.sessionId = Objects.requireNonNull(sessionId, "sessionId");
+        this.accountNumber = Objects.requireNonNull(accountNumber, "accountNumber");
+        this.ownerName = ownerName == null ? "" : ownerName;
+        this.clientInstanceId = clientInstanceId == null ? "" : clientInstanceId;
+        this.remoteIp = remoteIp == null ? "UNKNOWN" : remoteIp;
+        this.connectedAt = connectedAt == null ? Instant.now() : connectedAt;
+        this.lastSeenAt = lastSeenAt == null ? Instant.now() : lastSeenAt;
+        this.status = status == null ? SessionStatus.ACTIVE : status;
+        this.connectedServerId = connectedServerId == null ? "UNKNOWN" : connectedServerId;
+        this.pushEnabled = pushEnabled;
     }
 
-    public String getSessionId() {
-        return sessionId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getClientInstanceId() {
-        return clientInstanceId;
-    }
-
-    public String getRemoteIp() {
-        return remoteIp;
-    }
-
-    public int getRemotePort() {
-        return remotePort;
-    }
-
-    public Instant getConnectedAt() {
-        return connectedAt;
-    }
-
-    public Instant getLastSeenAt() {
-        return lastSeenAt;
-    }
-
-    public SessionStatus getStatus() {
-        return status;
-    }
-
-    public String getConnectedServerId() {
-        return connectedServerId;
-    }
+    public String getSessionId() { return sessionId; }
+    public String getAccountNumber() { return accountNumber; }
+    public String getOwnerName() { return ownerName; }
+    public String getClientInstanceId() { return clientInstanceId; }
+    public String getRemoteIp() { return remoteIp; }
+    public Instant getConnectedAt() { return connectedAt; }
+    public Instant getLastSeenAt() { return lastSeenAt; }
+    public SessionStatus getStatus() { return status; }
+    public String getConnectedServerId() { return connectedServerId; }
+    /** True when the device registered an RMI callback and receives balance pushes. */
+    public boolean isPushEnabled() { return pushEnabled; }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ClientSessionDTO that = (ClientSessionDTO) o;
-        return Objects.equals(sessionId, that.sessionId);
+        return this == o || (o instanceof ClientSessionDTO s && sessionId.equals(s.sessionId));
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(sessionId);
-    }
+    public int hashCode() { return sessionId.hashCode(); }
 
     @Override
     public String toString() {
-        return "ClientSessionDTO{" +
-                "sessionId='" + sessionId + '\'' +
-                ", username='" + username + '\'' +
-                ", remoteIp='" + remoteIp + '\'' +
-                ", remotePort=" + remotePort +
-                ", status=" + status +
-                ", connectedServerId='" + connectedServerId + '\'' +
-                '}';
+        return "ClientSessionDTO{" + sessionId + ", account=" + accountNumber + ", ip=" + remoteIp + ", " + status
+                + ", server=" + connectedServerId + "}";
     }
 }

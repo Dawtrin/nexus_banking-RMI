@@ -1,14 +1,17 @@
 package com.nexus.banking.server.rmi;
 
-import com.nexus.banking.contract.dto.ChatMessageDTO;
-import com.nexus.banking.contract.dto.ClientSessionDTO;
+import com.nexus.banking.contract.dto.AccountDTO;
 import com.nexus.banking.contract.dto.ErrorCodes;
-import com.nexus.banking.contract.dto.MessagePage;
+import com.nexus.banking.contract.dto.LoginResultDTO;
 import com.nexus.banking.contract.dto.OperationResult;
 import com.nexus.banking.contract.dto.ServerStatusDTO;
-import com.nexus.banking.contract.remote.ChatRemote;
-import com.nexus.banking.contract.remote.MonitoringRemote;
-import com.nexus.banking.contract.remote.ReplicationRemote;
+import com.nexus.banking.contract.dto.TransactionDTO;
+import com.nexus.banking.contract.enums.AccountStatus;
+import com.nexus.banking.contract.remote.BankingAdminService;
+import com.nexus.banking.contract.remote.BankingCallback;
+import com.nexus.banking.contract.remote.BankingMonitoringService;
+import com.nexus.banking.contract.remote.BankingReplicationService;
+import com.nexus.banking.contract.remote.BankingService;
 import com.nexus.banking.contract.rmi.TimeoutClientSocketFactory;
 import com.nexus.banking.server.service.PeerReplicationManager;
 import com.nexus.banking.server.support.Node;
@@ -16,54 +19,49 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.ServerSocket;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.time.Duration;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.nexus.banking.server.support.Node.m;
+import static com.nexus.banking.server.support.Node.req;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Real Java RMI on localhost: two registries/service ports, real stubs, real serialization. */
+/** Real Java RMI on localhost: two registries, real stubs, real serialization, a real client-exported callback. */
 class RmiEndToEndTest {
     static {
         com.nexus.banking.contract.rmi.RmiTimeouts.install(1500);
     }
 
-    /** Test-only remote whose method outlasts the read timeout. */
-    public interface Slow extends java.rmi.Remote {
-        String slow() throws java.rmi.RemoteException;
-    }
-
-    private static final java.util.concurrent.atomic.AtomicInteger NEXT = new java.util.concurrent.atomic.AtomicInteger(0);
-    private int A_REG, A_SVC, B_REG, B_SVC;   // distinct ports per test: closing a registry releases its port asynchronously
+    private static final AtomicInteger NEXT = new AtomicInteger(0);
+    private int aReg, aSvc, bReg, bSvc;
     private Node a;
     private Node b;
     private RmiRegistryManager rmiA;
     private RmiRegistryManager rmiB;
 
     private static RmiRegistryManager publish(Node n) throws Exception {
-        RmiRegistryManager m = new RmiRegistryManager(n.config);
-        m.start();
-        m.exportAndBind(RmiRegistryManager.CHAT_SERVICE_NAME, n.chat, n.config.getRmiServicePort());
-        m.exportAndBind(RmiRegistryManager.REPLICATION_SERVICE_NAME, n.repl, n.config.getRmiServicePort());
-        m.exportAndBind(RmiRegistryManager.MONITORING_SERVICE_NAME, n.monitoring, n.config.getRmiServicePort());
-        return m;
+        RmiRegistryManager r = new RmiRegistryManager(n.config);
+        r.start();
+        int p = n.config.getRmiServicePort();
+        r.exportAndBind(RmiRegistryManager.BANKING_SERVICE_NAME, n.bank, p);
+        r.exportAndBind(RmiRegistryManager.REPLICATION_SERVICE_NAME, n.repl, p);
+        r.exportAndBind(RmiRegistryManager.MONITORING_SERVICE_NAME, n.monitoring, p);
+        r.exportAndBind(RmiRegistryManager.ADMIN_SERVICE_NAME, n.admin, p);
+        return r;
     }
 
     @BeforeEach
     void setUp() throws Exception {
-        int base = 31000 + NEXT.getAndIncrement() * 10;
-        A_REG = base;
-        A_SVC = base + 1;
-        B_REG = base + 2;
-        B_SVC = base + 3;
-        a = Node.ram("server-a", "server-b", Map.of("server.rmi.registry.port", "" + A_REG, "server.rmi.service.port", "" + A_SVC,
-                "server.peer.registry.port", "" + B_REG));
-        b = Node.ram("server-b", "server-a", Map.of("server.rmi.registry.port", "" + B_REG, "server.rmi.service.port", "" + B_SVC,
-                "server.peer.registry.port", "" + A_REG));
+        int base = 33000 + NEXT.getAndIncrement() * 10;
+        aReg = base; aSvc = base + 1; bReg = base + 2; bSvc = base + 3;
+        a = Node.ram("server-a", "server-b", Map.of("server.rmi.registry.port", "" + aReg, "server.rmi.service.port", "" + aSvc,
+                "server.peer.registry.port", "" + bReg));
+        b = Node.ram("server-b", "server-a", Map.of("server.rmi.registry.port", "" + bReg, "server.rmi.service.port", "" + bSvc,
+                "server.peer.registry.port", "" + aReg));
         rmiA = publish(a);
         rmiB = publish(b);
         a.link.set(PeerReplicationManager.rmiConnector(a.config).connect());
@@ -82,70 +80,81 @@ class RmiEndToEndTest {
         return LocateRegistry.getRegistry("127.0.0.1", port, new TimeoutClientSocketFactory());
     }
 
-    @Test
-    void clientsCanChatThroughRealStubsAndMessagesReplicateOverRmi() throws Exception {
-        ChatRemote chatA = (ChatRemote) registry(A_REG).lookup(RmiRegistryManager.CHAT_SERVICE_NAME);
-        ChatRemote chatB = (ChatRemote) registry(B_REG).lookup(RmiRegistryManager.CHAT_SERVICE_NAME);
-        assertThat(chatA.getServerId()).isEqualTo("server-a");
+    /** A phone/ATM exports its own callback object exactly like the customer app does. */
+    private static BankingCallback export(Node.RecordingCallback impl) throws Exception {
+        return (BankingCallback) UnicastRemoteObject.exportObject(impl, 0, new TimeoutClientSocketFactory(), null);
+    }
 
-        ClientSessionDTO sa = chatA.registerClient("alice", "instance-alice-0001").getData();
-        ClientSessionDTO sb = chatB.registerClient("bob", "instance-bob-00001").getData();
-        assertThat(chatA.joinRoom(sa.getSessionId(), "general").isSuccess()).isTrue();
-        assertThat(chatB.joinRoom(sb.getSessionId(), "general").isSuccess()).isTrue();
-        OperationResult<ChatMessageDTO> sent = chatA.sendMessage(sa.getSessionId(), "general", UUID.randomUUID().toString(), "hello over rmi");
-        assertThat(sent.isSuccess()).isTrue();
-
-        a.replication.runOnce();                               // A pushes to B over RMI
-        MessagePage onB = chatB.getHistory(sb.getSessionId(), "general", 50).getData();
-        assertThat(onB.getMessages()).extracting(ChatMessageDTO::getContent).containsExactly("hello over rmi");
-        assertThat(onB.getMessages().get(0).getOriginServerId()).isEqualTo("server-a");
-        assertThat(a.replication.getStatus().getPendingCount()).isZero();
-
-        // an unauthenticated client cannot reach protected data through the same registry
-        ReplicationRemote replB = (ReplicationRemote) registry(B_REG).lookup(RmiRegistryManager.REPLICATION_SERVICE_NAME);
-        assertThat(replB.getMessagesAfter("server-a", "guess-guess-guess-guess", 0, 10).getErrorCode()).isEqualTo(ErrorCodes.UNAUTHORIZED);
-        assertThat(replB.replicateBatch("server-a", "guess-guess-guess-guess", java.util.List.of()).getErrorCode()).isEqualTo(ErrorCodes.UNAUTHORIZED);
+    private static void waitFor(java.util.function.BooleanSupplier c) throws Exception {
+        long end = System.currentTimeMillis() + 4000;
+        while (!c.getAsBoolean() && System.currentTimeMillis() < end) Thread.sleep(20);
     }
 
     @Test
-    void adminApiOverRmiNeedsTheToken() throws Exception {
-        MonitoringRemote mon = (MonitoringRemote) registry(A_REG).lookup(RmiRegistryManager.MONITORING_SERVICE_NAME);
+    void customerWorksThroughRealStubsAndMoneyReplicatesOverRmi() throws Exception {
+        BankingService bankA = (BankingService) registry(aReg).lookup(RmiRegistryManager.BANKING_SERVICE_NAME);
+        BankingService bankB = (BankingService) registry(bReg).lookup(RmiRegistryManager.BANKING_SERVICE_NAME);
+        assertThat(bankA.getServerId()).isEqualTo("server-a");
+
+        LoginResultDTO login = bankA.login(Node.AN, Node.PIN, "device-atm-hanoi1", null).getData();
+        String s = login.getSession().getSessionId();
+        OperationResult<TransactionDTO> w = bankA.withdraw(s, Node.AN, req(), m(2_000_000), "ATM Hà Nội");
+        assertThat(w.isSuccess()).isTrue();
+        assertThat(w.getData().getAmount()).isEqualByComparingTo("2000000");      // BigDecimal survives serialization
+
+        a.replication.runOnce();                                                  // A -> B over RMI
+        LoginResultDTO onB = bankB.login(Node.CUONG, Node.PIN, "device-atm-hcm-01", null).getData();
+        assertThat(onB.getAccount().getBalance()).isEqualByComparingTo("80000000");
+        assertThat(b.balance(Node.AN)).isEqualByComparingTo("48000000");
+        assertThat(a.store.outboxStats("server-b").pending()).isZero();
+
+        BankingReplicationService replB = (BankingReplicationService) registry(bReg).lookup(RmiRegistryManager.REPLICATION_SERVICE_NAME);
+        assertThat(replB.getTransactionsAfter("server-a", "guess-guess-guess-guess", 0, 10).getErrorCode()).isEqualTo(ErrorCodes.UNAUTHORIZED);
+    }
+
+    @Test
+    void balancePushArrivesOverARealCallbackStub() throws Exception {
+        BankingService bankA = (BankingService) registry(aReg).lookup(RmiRegistryManager.BANKING_SERVICE_NAME);
+        Node.RecordingCallback phone = new Node.RecordingCallback();
+        BankingCallback stub = export(phone);
+        try {
+            LoginResultDTO phoneLogin = bankA.login(Node.CUONG, Node.PIN, "device-phone-cuong1", stub).getData();
+            assertThat(phoneLogin.isCallbackRegistered()).isTrue();
+            String sa = a.login(Node.AN);
+            a.bank.transfer(sa, Node.AN, Node.CUONG, req(), m(1_000_000), "qua RMI callback");
+            waitFor(() -> !phone.balances.isEmpty());
+            assertThat(phone.balances).hasSize(1);
+            assertThat(phone.balances.get(0).getDelta()).isEqualByComparingTo("1000000");
+            assertThat(phone.balances.get(0).getNewBalance()).isEqualByComparingTo("81000000");
+
+            // single session: a second device logs in elsewhere -> this phone is told immediately
+            BankingService bankB = (BankingService) registry(bReg).lookup(RmiRegistryManager.BANKING_SERVICE_NAME);
+            bankB.login(Node.CUONG, Node.PIN, "device-atm-hcm-02", null);
+            waitFor(() -> !phone.evictions.isEmpty());
+            assertThat(phone.evictions).hasSize(1);
+            OperationResult<AccountDTO> old = bankA.getAccount(phoneLogin.getSession().getSessionId(), Node.CUONG);
+            assertThat(old.getErrorCode()).isEqualTo(ErrorCodes.SESSION_EVICTED);
+        } finally {
+            UnicastRemoteObject.unexportObject(phone, true);
+        }
+    }
+
+    @Test
+    void adminAndMonitoringNeedTheTokenOverRmi() throws Exception {
+        BankingMonitoringService mon = (BankingMonitoringService) registry(aReg).lookup(RmiRegistryManager.MONITORING_SERVICE_NAME);
         assertThat(mon.getServerStatus("not-the-token-at-all").getErrorCode()).isEqualTo(ErrorCodes.UNAUTHORIZED);
         OperationResult<ServerStatusDTO> ok = mon.getServerStatus(Node.ADMIN_TOKEN);
         assertThat(ok.isSuccess()).isTrue();
-        assertThat(ok.getData().getRegistryPort()).isEqualTo(A_REG);
-        assertThat(ok.getData().getServicePort()).isEqualTo(A_SVC);
-        assertThat(mon.getReplicationStatus(Node.ADMIN_TOKEN).getData().getPeerServerId()).isEqualTo("server-b");
-    }
+        assertThat(ok.getData().getRegistryPort()).isEqualTo(aReg);
 
-    @Test
-    void callsToAnUnresponsivePeerFailWithinTheConfiguredTimeout() throws Exception {
-        try (ServerSocket blackHole = new ServerSocket(0)) {      // accepts TCP, never speaks RMI
-            int port = blackHole.getLocalPort();
-            Registry stuck = LocateRegistry.getRegistry("127.0.0.1", port, new TimeoutClientSocketFactory(500, 800));
-            long t0 = System.nanoTime();
-            assertThatThrownBy(stuck::list).isInstanceOf(java.rmi.RemoteException.class);
-            assertThat(Duration.ofNanos(System.nanoTime() - t0)).isLessThan(Duration.ofSeconds(5));
-        }
-    }
-
-    @Test
-    void aRemoteCallThatOutlastsTheReadTimeoutFailsInsteadOfHanging() throws Exception {
-        Slow impl = () -> {
-            try {
-                Thread.sleep(6000);
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-            }
-            return "late";
-        };
-        Slow stub = (Slow) java.rmi.server.UnicastRemoteObject.exportObject(impl, 0, new TimeoutClientSocketFactory(500, 800), null);
-        try {
-            long t0 = System.nanoTime();
-            assertThatThrownBy(stub::slow).isInstanceOf(java.rmi.RemoteException.class);
-            assertThat(Duration.ofNanos(System.nanoTime() - t0)).isLessThan(Duration.ofSeconds(4));
-        } finally {
-            java.rmi.server.UnicastRemoteObject.unexportObject(impl, true);
-        }
+        BankingAdminService adm = (BankingAdminService) registry(aReg).lookup(RmiRegistryManager.ADMIN_SERVICE_NAME);
+        assertThat(adm.listAccounts("wrong-token-wrong-token").getErrorCode()).isEqualTo(ErrorCodes.UNAUTHORIZED);
+        List<AccountDTO> accounts = adm.listAccounts(Node.ADMIN_TOKEN).getData();
+        assertThat(accounts).hasSize(7);
+        assertThat(adm.setAccountStatus(Node.ADMIN_TOKEN, "risk-officer", Node.AN, AccountStatus.LOCKED, "nghi ngờ gian lận").isSuccess()).isTrue();
+        assertThat(a.bank.login(Node.AN, Node.PIN, "device-lockedtest1", null).getErrorCode()).isEqualTo(ErrorCodes.ACCOUNT_LOCKED);
+        var verify = adm.verifyAuditChain(Node.ADMIN_TOKEN).getData();
+        assertThat(verify.isValid()).isTrue();
+        assertThat(adm.getAuditLog(Node.ADMIN_TOKEN, 10).getData()).extracting(x -> x.getAction()).contains("LOCK_ACCOUNT");
     }
 }

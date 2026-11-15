@@ -60,6 +60,8 @@ public class ServerConfig {
     private final boolean sslNeedClientAuth;
     private final boolean peerSslEnabled;
     private final boolean singleSessionEnabled;
+    private final String branchName;
+    private final java.time.ZoneId businessZone;
 
     /** Production constructor: reads real CLI args, system properties, environment and application.properties. */
     public ServerConfig(String[] args) {
@@ -90,7 +92,15 @@ public class ServerConfig {
         this.sslTrustStorePassword = get("server.ssl.truststore.password", "NEXUS_SSL_TRUSTSTORE_PASSWORD", null);
         this.sslNeedClientAuth = Boolean.parseBoolean(get("server.ssl.need.client.auth", "NEXUS_SSL_NEED_CLIENT_AUTH", "false"));
         this.peerSslEnabled = Boolean.parseBoolean(get("server.peer.ssl.enabled", "NEXUS_PEER_SSL_ENABLED", String.valueOf(this.sslEnabled)));
-        this.singleSessionEnabled = Boolean.parseBoolean(get("server.session.single", "NEXUS_SINGLE_SESSION", "false"));
+        // Banking: one customer session per account across the whole cluster is the default.
+        this.singleSessionEnabled = Boolean.parseBoolean(get("server.session.single", "NEXUS_SINGLE_SESSION", "true"));
+        this.branchName = get("server.branch.name", "NEXUS_BRANCH_NAME", serverId);
+        String zone = get("server.business.timezone", "NEXUS_TIMEZONE", "Asia/Ho_Chi_Minh");
+        try {
+            this.businessZone = java.time.ZoneId.of(zone);
+        } catch (java.time.DateTimeException e) {
+            throw new ConfigException("server.business.timezone is not a valid time zone: " + zone);
+        }
 
         if (this.sslEnabled) {
             configureSslSystemProperties();
@@ -108,7 +118,7 @@ public class ServerConfig {
                 Boolean.parseBoolean(dbFlag),
                 get("database.host", "NEXUS_DB_HOST", "127.0.0.1"),
                 port("database.port", "NEXUS_DB_PORT", "3306"),
-                get("database.name", "NEXUS_DB_NAME", "nexus_chat"),
+                get("database.name", "NEXUS_DB_NAME", "nexus_banking"),
                 get("database.username", "DB_USERNAME", "nexus_user"),
                 get("database.password", "DB_PASSWORD", ""),
                 intValue("database.pool.max-size", "NEXUS_DB_POOL_MAX", "10", 1, 100));
@@ -270,6 +280,10 @@ public class ServerConfig {
     public long getBackoffMaxMillis() { return backoffMaxMillis; }
     public boolean isSslEnabled() { return sslEnabled; }
     public boolean isSingleSessionEnabled() { return singleSessionEnabled; }
+    /** Human readable branch served by this node (shown to customers and operators). */
+    public String getBranchName() { return branchName; }
+    /** Time zone that defines "today" for the daily withdrawal/transfer limit. */
+    public java.time.ZoneId getBusinessZone() { return businessZone; }
     public String getSslKeyStorePath() { return sslKeyStorePath; }
     public String getSslKeyStorePassword() { return sslKeyStorePassword; }
     public String getSslTrustStorePath() { return sslTrustStorePath; }

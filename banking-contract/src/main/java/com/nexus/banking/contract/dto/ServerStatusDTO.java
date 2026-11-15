@@ -30,6 +30,7 @@ public class ServerStatusDTO implements Serializable {
     private final int pendingReplicationCount;
     private final Instant lastReplicationTimestamp;
     private final String persistenceMode;
+    private final String branchName;
 
     public ServerStatusDTO(String serverId,
                            String hostname,
@@ -64,6 +65,29 @@ public class ServerStatusDTO implements Serializable {
                            int pendingReplicationCount,
                            Instant lastReplicationTimestamp,
                            String persistenceMode) {
+        this(serverId, hostname, configuredAddress, bindAddress, advertisedRmiHost, registryPort, servicePort,
+                serverStatus, peerStatus, databaseStatus, uptimeSeconds, startedAt, activeSessionCount,
+                pendingReplicationCount, lastReplicationTimestamp, persistenceMode, "");
+    }
+
+    public ServerStatusDTO(String serverId,
+                           String hostname,
+                           String configuredAddress,
+                           String bindAddress,
+                           String advertisedRmiHost,
+                           int registryPort,
+                           int servicePort,
+                           ServerStatus serverStatus,
+                           ServerStatus peerStatus,
+                           ServerStatus databaseStatus,
+                           long uptimeSeconds,
+                           Instant startedAt,
+                           int activeSessionCount,
+                           int pendingReplicationCount,
+                           Instant lastReplicationTimestamp,
+                           String persistenceMode,
+                           String branchName) {
+        this.branchName = branchName != null ? branchName : "";
         this.serverId = Objects.requireNonNull(serverId, "serverId cannot be null");
         this.hostname = hostname != null ? hostname : "UNKNOWN";
         this.configuredAddress = configuredAddress != null ? configuredAddress : "UNKNOWN";
@@ -80,6 +104,11 @@ public class ServerStatusDTO implements Serializable {
         this.pendingReplicationCount = pendingReplicationCount;
         this.lastReplicationTimestamp = lastReplicationTimestamp;
         this.persistenceMode = persistenceMode != null ? persistenceMode : "UNKNOWN";
+    }
+
+    /** Human readable branch served by this node, e.g. "Chi nhánh Hà Nội". */
+    public String getBranchName() {
+        return branchName == null || branchName.isEmpty() ? serverId : branchName;
     }
 
     public String getServerId() {

@@ -1,265 +1,240 @@
 package com.nexus.banking.server.service;
 
-import com.nexus.banking.contract.dto.ChatMessageDTO;
 import com.nexus.banking.contract.dto.ErrorCodes;
+import com.nexus.banking.contract.dto.LedgerSummaryDTO;
 import com.nexus.banking.contract.dto.OperationResult;
 import com.nexus.banking.contract.dto.ReplicationAck;
-import com.nexus.banking.contract.dto.ReplicationStatusDTO;
-import com.nexus.banking.contract.dto.ServerStatusDTO;
-import com.nexus.banking.contract.enums.MessageType;
-import com.nexus.banking.contract.enums.ServerStatus;
-import com.nexus.banking.contract.remote.ReplicationRemote;
+import com.nexus.banking.contract.dto.TransactionDTO;
 import com.nexus.banking.server.support.Node;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.nexus.banking.server.support.Node.m;
+import static com.nexus.banking.server.support.Node.req;
 import static org.assertj.core.api.Assertions.assertThat;
 
+/** Two active/active branches exchanging ledger entries: eventual consistency, catch-up, duplicate suppression. */
 class ReplicationTest {
     private Node a;
     private Node b;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void up() {
         a = Node.ram("server-a", "server-b");
         b = Node.ram("server-b", "server-a");
+        Node.connect(a, b);
     }
 
     @AfterEach
-    void tearDown() throws Exception {
+    void down() {
         a.close();
         b.close();
     }
 
-    private List<ChatMessageDTO> history(Node n, String user) {
-        String s = n.login(user + "-reader", "instance-" + user + "-9999", "general");
-        return n.chat.getHistory(s, "general", 200).getData().getMessages();
-    }
-
-    private static void sleep(long ms) {
-        try {
-            Thread.sleep(ms);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    @Test
-    void messagesFlowBothWaysWithoutLooping() throws Exception {
-        a.link.set(b.repl);
-        b.link.set(a.repl);
-        a.send(a.login("alice"), "from A");
-        b.send(b.login("bob"), "from B");
-        a.replication.runOnce();
-        b.replication.runOnce();
-        a.replication.runOnce();
-        assertThat(history(a, "x")).extracting(ChatMessageDTO::getContent).containsExactlyInAnyOrder("from A", "from B");
-        assertThat(history(b, "y")).extracting(ChatMessageDTO::getContent).containsExactlyInAnyOrder("from A", "from B");
-        // nothing is bounced back: no new pending entries on either node
-        assertThat(a.replication.getStatus().getPendingCount()).isZero();
-        assertThat(b.replication.getStatus().getPendingCount()).isZero();
-    }
-
-    @Test
-    void duplicateDeliveryIsIdempotent() throws Exception {
-        a.send(a.login("alice"), "once");
-        List<ChatMessageDTO> batch = a.store.findByOriginAfter("server-a", 0, 500);
-        // two deliveries of the same batch
-        OperationResult<ReplicationAck> r1 = b.repl.replicateBatch("server-a", Node.SECRET, batch);
-        OperationResult<ReplicationAck> r2 = b.repl.replicateBatch("server-a", Node.SECRET, batch);
-        assertThat(r1.getData().getAcceptedMessageIds()).hasSize(1);
-        assertThat(r2.getData().getAcceptedMessageIds()).hasSize(1);
-        assertThat(history(b, "z")).hasSize(1);
-    }
-
-    @Test
-    void unauthenticatedOrSpoofedCallersAreRejected() throws Exception {
-        a.send(a.login("alice"), "secret stuff");
-        List<ChatMessageDTO> batch = a.store.findByOriginAfter("server-a", 0, 500);
-        assertThat(b.repl.replicateBatch("server-a", "wrong-secret-wrong-secret", batch).getErrorCode()).isEqualTo(ErrorCodes.UNAUTHORIZED);
-        assertThat(b.repl.replicateBatch("intruder", Node.SECRET, batch).getErrorCode()).isEqualTo(ErrorCodes.UNAUTHORIZED);
-        assertThat(b.repl.getMessagesAfter("server-a", null, 0, 10).getErrorCode()).isEqualTo(ErrorCodes.UNAUTHORIZED);
-        assertThat(b.repl.getPeerStatus("server-a", "nope").getErrorCode()).isEqualTo(ErrorCodes.UNAUTHORIZED);
-        assertThat(history(b, "q")).isEmpty();
-    }
-
-    @Test
-    void messagesWithForeignOrOwnOriginAreRejectedPerMessage() throws Exception {
-        Instant t = Instant.now();
-        ChatMessageDTO claimsReceiver = new ChatMessageDTO("id-1", "general", "s", "n", "x", t, "server-b", 1, MessageType.CHAT, 0);
-        ChatMessageDTO claimsThird = new ChatMessageDTO("id-2", "general", "s", "n", "x", t, "server-z", 1, MessageType.CHAT, 0);
-        ChatMessageDTO good = new ChatMessageDTO("id-3", "general", "s", "n", "ok", t, "server-a", 1, MessageType.CHAT, 0);
-        ReplicationAck ack = b.repl.replicateBatch("server-a", Node.SECRET, List.of(claimsReceiver, claimsThird, good)).getData();
-        assertThat(ack.getAcceptedMessageIds()).containsExactly("id-3");
-        assertThat(ack.getRejected()).containsKeys("id-1", "id-2");
-    }
-
-    @Test
-    void conflictingOriginSequenceIsRejectedNotOverwritten() throws Exception {
-        Instant t = Instant.now();
-        ChatMessageDTO first = new ChatMessageDTO("id-1", "general", "s", "n", "first", t, "server-a", 1, MessageType.CHAT, 0);
-        ChatMessageDTO other = new ChatMessageDTO("id-2", "general", "s", "n", "other", t, "server-a", 1, MessageType.CHAT, 0);
-        b.repl.replicateBatch("server-a", Node.SECRET, List.of(first));
-        ReplicationAck ack = b.repl.replicateBatch("server-a", Node.SECRET, List.of(other)).getData();
-        assertThat(ack.getAcceptedMessageIds()).isEmpty();
-        assertThat(ack.getRejected()).containsKey("id-2");
-        assertThat(history(b, "r")).extracting(ChatMessageDTO::getContent).containsExactly("first");
-    }
-
-    @Test
-    void peerOfflineKeepsMessagesPendingAndRecoveryDeliversThem() throws Exception {
-        String alice = a.login("alice");
-        a.send(alice, "m1");
-        a.send(alice, "m2");
-        a.replication.runOnce(); // link is null => peer unreachable
-        ReplicationStatusDTO s = a.replication.getStatus();
-        assertThat(s.getPeerStatus()).isEqualTo(ServerStatus.UNREACHABLE);
-        assertThat(s.getPendingCount()).isEqualTo(2);
-        assertThat(s.getLastError()).contains("peer offline");
-        a.link.set(b.repl);
-        sleep(150); // backoff window
-        a.replication.runOnce();
-        assertThat(a.replication.getStatus().getPendingCount()).isZero();
-        assertThat(a.replication.getStatus().getPeerStatus()).isEqualTo(ServerStatus.ONLINE);
-        assertThat(history(b, "w")).extracting(ChatMessageDTO::getContent).containsExactly("m1", "m2");
-    }
-
-    @Test
-    void catchUpPullsMoreThanOneBatchAndIsPagedUntilComplete() throws Exception {
-        String alice = a.login("alice");
-        for (int i = 1; i <= 250; i++) a.send(alice, "msg " + i);
-        // A cannot push (link null); B pulls through catch-up with page size 100 => 3 pages
-        b.link.set(a.repl);
-        b.replication.runOnce();
-        assertThat(b.store.getInboundCheckpoint("server-a")).isEqualTo(250);
-        assertThat(history(b, "p")).hasSize(200); // history is capped at 200 per page by contract
-        assertThat(b.chat.getHistory(b.login("carol", "instance-cccc-0003", "general"), "general", 200).getData().hasMore()).isTrue();
-    }
-
-    @Test
-    void failedCatchUpIsRetriedWithoutAnyDisconnectTransition() throws Exception {
-        String alice = a.login("alice");
-        for (int i = 1; i <= 5; i++) a.send(alice, "m" + i);
-        AtomicInteger calls = new AtomicInteger();
-        b.link.set(new ReplicationRemote() {
-            @Override
-            public OperationResult<ReplicationAck> replicateBatch(String s, String sec, List<ChatMessageDTO> m) {
-                return a.repl.replicateBatch(s, sec, m);
-            }
-
-            @Override
-            public OperationResult<List<ChatMessageDTO>> getMessagesAfter(String r, String sec, long after, int limit) throws java.rmi.RemoteException {
-                if (calls.incrementAndGet() == 1) throw new java.rmi.RemoteException("boom during catch-up");
-                return a.repl.getMessagesAfter(r, sec, after, limit);
-            }
-
-            @Override
-            public OperationResult<ServerStatusDTO> getPeerStatus(String r, String sec) {
-                return a.repl.getPeerStatus(r, sec);
-            }
-        });
-        b.replication.runOnce(); // ping ok, catch-up throws
-        assertThat(b.store.getInboundCheckpoint("server-a")).isZero();
-        sleep(150);
-        b.replication.runOnce(); // must retry on its own
-        assertThat(b.store.getInboundCheckpoint("server-a")).isEqualTo(5);
-    }
-
-    @Test
-    void poisonMessageDoesNotBlockOthersAndEndsDeadLetteredThenRequeueable() throws Exception {
-        String alice = a.login("alice");
-        a.send(alice, "good-1");
-        a.send(alice, "poison");
-        a.send(alice, "good-2");
-        String poisonId = a.store.findByOriginAfter("server-a", 0, 10).get(1).getMessageId();
-        a.link.set(new ReplicationRemote() {
-            @Override
-            public OperationResult<ReplicationAck> replicateBatch(String s, String sec, List<ChatMessageDTO> msgs) {
-                List<ChatMessageDTO> ok = new ArrayList<>();
-                Map<String, String> rej = new LinkedHashMap<>();
-                for (ChatMessageDTO m : msgs) {
-                    if (m.getMessageId().equals(poisonId)) rej.put(m.getMessageId(), "synthetic poison");
-                    else ok.add(m);
-                }
-                ReplicationAck real = b.repl.replicateBatch(s, sec, ok).getData();
-                return OperationResult.success(new ReplicationAck(real.getAcceptedMessageIds(), rej));
-            }
-
-            @Override
-            public OperationResult<List<ChatMessageDTO>> getMessagesAfter(String r, String sec, long after, int limit) {
-                return b.repl.getMessagesAfter(r, sec, after, limit);
-            }
-
-            @Override
-            public OperationResult<ServerStatusDTO> getPeerStatus(String r, String sec) {
-                return b.repl.getPeerStatus(r, sec);
-            }
-        });
-        for (int i = 0; i < 6; i++) {
+    private void converge() {
+        for (int i = 0; i < 4; i++) {
             a.replication.runOnce();
-            sleep(120);
+            b.replication.runOnce();
         }
-        assertThat(history(b, "v")).extracting(ChatMessageDTO::getContent).containsExactlyInAnyOrder("good-1", "good-2");
-        ReplicationStatusDTO s = a.replication.getStatus();
-        assertThat(s.getDeadLetterCount()).isEqualTo(1);   // visible, not silently dropped
-        assertThat(s.getPendingCount()).isZero();
-        assertThat(a.admin.requeueDeadLetters(Node.ADMIN_TOKEN, "tester").getData()).isEqualTo(1);
-        assertThat(a.replication.getStatus().getPendingCount()).isEqualTo(1);
-        assertThat(a.replication.getStatus().getDeadLetterCount()).isZero();
+    }
+
+    private String digest(Node n) throws Exception {
+        return n.store.ledgerSummary(n.config.getServerId()).getBalanceDigest();
     }
 
     @Test
-    void ackOnlyListsMessagesTheReceiverActuallyHolds() throws Exception {
-        String alice = a.login("alice");
-        a.send(alice, "m1");
-        ChatMessageDTO m = a.store.findByOriginAfter("server-a", 0, 500).get(0);
-        ChatMessageDTO badRoom = new ChatMessageDTO("id-x", "bad room!", "s", "n", "x", Instant.now(), "server-a", 2, MessageType.CHAT, 0);
-        ReplicationAck ack = b.repl.replicateBatch("server-a", Node.SECRET, List.of(m, badRoom)).getData();
-        assertThat(ack.getAcceptedMessageIds()).containsExactly(m.getMessageId());
-        assertThat(ack.getRejected()).containsKey("id-x");
-        assertThat(history(b, "u")).hasSize(1);
-    }
-
-    @Test
-    void metricsCountMessagesNotBatches() throws Exception {
-        a.link.set(b.repl);
-        String alice = a.login("alice");
-        for (int i = 0; i < 7; i++) a.send(alice, "m" + i);
+    void aDepositOnOneBranchAppearsOnTheOther() throws Exception {
+        String s = a.login(Node.AN);
+        a.bank.deposit(s, Node.AN, req(), m(5_000_000), "lương");
+        assertThat(b.balance(Node.AN)).isEqualByComparingTo("50000000");   // not replicated yet
         a.replication.runOnce();
-        assertThat(a.metrics.getMessagesReplicatedOut()).isEqualTo(7);
-        assertThat(b.metrics.getMessagesReplicatedIn()).isEqualTo(7);
+        assertThat(b.balance(Node.AN)).isEqualByComparingTo("55000000");
+        assertThat(digest(a)).isEqualTo(digest(b));
     }
 
     @Test
-    void crossNodeLoginEvictsSessionOnPeerNode() throws Exception {
-        Node nodeA = Node.ram("server-a", "server-b", Map.of("server.session.single", "true"));
-        Node nodeB = Node.ram("server-b", "server-a", Map.of("server.session.single", "true"));
-        try {
-            nodeB.link.set(nodeA.repl);
-            nodeA.link.set(nodeB.repl);
+    void transfersReplicateBothLegs() throws Exception {
+        String s = a.login(Node.AN);
+        a.bank.transfer(s, Node.AN, Node.CUONG, req(), m(3_000_000), "");
+        a.replication.runOnce();
+        assertThat(b.balance(Node.AN)).isEqualByComparingTo("47000000");
+        assertThat(b.balance(Node.CUONG)).isEqualByComparingTo("83000000");
+        assertThat(digest(a)).isEqualTo(digest(b));
+    }
 
-            String aliceA = nodeA.login("alice", "instance-a-001", "general");
-            assertThat(nodeA.chat.heartbeat(aliceA).isSuccess()).isTrue();
+    @Test
+    void bothBranchesAcceptTransactionsIndependentlyAndConverge() throws Exception {
+        String sa = a.login(Node.AN);
+        String sc = b.login(Node.CUONG);
+        a.bank.withdraw(sa, Node.AN, req(), m(1_000_000), "");
+        b.bank.deposit(sc, Node.CUONG, req(), m(2_000_000), "");
+        b.bank.transfer(sc, Node.CUONG, Node.BINH, req(), m(500_000), "");
+        converge();
+        assertThat(a.balance(Node.AN)).isEqualByComparingTo("49000000");
+        assertThat(a.balance(Node.CUONG)).isEqualByComparingTo("81500000");
+        assertThat(a.balance(Node.BINH)).isEqualByComparingTo("25500000");
+        assertThat(digest(a)).isEqualTo(digest(b));
+        assertThat(a.store.outboxStats("server-b").pending()).isZero();
+        assertThat(b.store.outboxStats("server-a").pending()).isZero();
+    }
 
-            String aliceB = nodeB.login("alice", "instance-b-001", "general");
-            assertThat(nodeB.chat.heartbeat(aliceB).isSuccess()).isTrue();
+    @Test
+    void networkPartitionThenRecoveryConvergesWithoutLosingAnything() throws Exception {
+        a.link.set(null);                                            // cable pulled
+        b.link.set(null);
+        String sa = a.login(Node.AN);
+        String sc = b.login(Node.CUONG);
+        for (int i = 0; i < 5; i++) a.bank.withdraw(sa, Node.AN, req(), m(100_000), "offline A");
+        for (int i = 0; i < 3; i++) b.bank.deposit(sc, Node.CUONG, req(), m(200_000), "offline B");
+        a.bank.transfer(sa, Node.AN, Node.EM, req(), m(1_000_000), "offline transfer");
+        a.replication.runOnce();
+        b.replication.runOnce();
+        assertThat(a.store.outboxStats("server-b").pending()).isEqualTo(7);   // 5 withdrawals + 2 transfer legs
+        assertThat(digest(a)).isNotEqualTo(digest(b));
+        // transactions are tagged "waiting for sync" while the peer is unreachable
+        assertThat(a.bank.getRecentTransactions(sa, Node.AN, 10).getData())
+                .allMatch(t -> t.getSyncState() == com.nexus.banking.contract.enums.TransactionSyncState.PENDING);
 
-            sleep(150);
+        Thread.sleep(300);                                           // let the connection back-off elapse
+        Node.connect(a, b);                                          // cable plugged back in
+        converge();
+        assertThat(digest(a)).isEqualTo(digest(b));
+        assertThat(a.balance(Node.AN)).isEqualByComparingTo("48500000");
+        assertThat(b.balance(Node.AN)).isEqualByComparingTo("48500000");
+        assertThat(b.balance(Node.CUONG)).isEqualByComparingTo("80600000");
+        assertThat(a.balance(Node.CUONG)).isEqualByComparingTo("80600000");
+        assertThat(a.store.outboxStats("server-b").pending()).isZero();
+        assertThat(a.bank.getRecentTransactions(sa, Node.AN, 10).getData())
+                .allMatch(t -> t.getSyncState() == com.nexus.banking.contract.enums.TransactionSyncState.SYNCED);
+    }
 
-            var hbA = nodeA.chat.heartbeat(aliceA);
-            assertThat(hbA.getErrorCode()).isEqualTo(ErrorCodes.SESSION_EVICTED);
-            assertThat(hbA.getMessage()).contains("Tài khoản của bạn đã được đăng nhập");
-        } finally {
-            nodeA.close();
-            nodeB.close();
+    @Test
+    void catchUpPullsMissedEntriesEvenWhenThePeerCannotPushThem() throws Exception {
+        String sa = a.login(Node.AN);
+        a.link.set(null);                                            // A cannot reach B, B can reach A
+        for (int i = 0; i < 4; i++) a.bank.deposit(sa, Node.AN, req(), m(1_000_000), "");
+        b.replication.runOnce();                                     // B pulls from A's ledger (catch-up)
+        assertThat(b.balance(Node.AN)).isEqualByComparingTo("54000000");
+        assertThat(b.store.getInboundCheckpoint("server-a")).isEqualTo(4);
+        b.replication.runOnce();
+        assertThat(b.balance(Node.AN)).isEqualByComparingTo("54000000");   // pulling twice never applies twice
+    }
+
+    @Test
+    void replayingTheSameBatchIsHarmless() throws Exception {
+        String s = a.login(Node.AN);
+        a.bank.deposit(s, Node.AN, req(), m(1_000_000), "");
+        List<TransactionDTO> batch = a.store.findByOriginAfter("server-a", 0, 10);
+        for (int i = 0; i < 3; i++) {
+            OperationResult<ReplicationAck> r = b.repl.replicateBatch("server-a", Node.SECRET, batch);
+            assertThat(r.isSuccess()).isTrue();
+            assertThat(r.getData().getAcceptedTransactionIds()).hasSize(1);
         }
+        assertThat(b.balance(Node.AN)).isEqualByComparingTo("51000000");
+    }
+
+    @Test
+    void theSameClientRequestExecutedOnBothBranchesDuringAPartitionDebitsOnce() throws Exception {
+        a.link.set(null);
+        b.link.set(null);
+        String sa = a.login(Node.AN);
+        String sb = b.login(Node.AN);
+        String retryId = req();                                      // phone retries on the other ATM during the outage
+        assertThat(a.bank.withdraw(sa, Node.AN, retryId, m(2_000_000), "").isSuccess()).isTrue();
+        assertThat(b.bank.withdraw(sb, Node.AN, retryId, m(2_000_000), "").isSuccess()).isTrue();
+        Thread.sleep(300);
+        Node.connect(a, b);
+        converge();
+        assertThat(a.balance(Node.AN)).isEqualByComparingTo("48000000");   // ONE debit, not two
+        assertThat(b.balance(Node.AN)).isEqualByComparingTo("48000000");
+        assertThat(digest(a)).isEqualTo(digest(b));
+        assertThat(a.auditActions()).contains("DUPLICATE_SUPPRESSED");
+        assertThat(b.auditActions()).contains("DUPLICATE_SUPPRESSED");
+    }
+
+    @Test
+    void spendingTheSameMoneyOnBothBranchesIsDetectedAsAnOverdraft() throws Exception {
+        a.link.set(null);
+        b.link.set(null);
+        String sa = a.login(Node.EM);                                // 5,000,000
+        String sb = b.login(Node.EM);
+        assertThat(a.bank.withdraw(sa, Node.EM, req(), m(3_000_000), "").isSuccess()).isTrue();
+        assertThat(b.bank.withdraw(sb, Node.EM, req(), m(3_000_000), "").isSuccess()).isTrue();
+        Thread.sleep(300);
+        Node.connect(a, b);
+        converge();
+        assertThat(a.balance(Node.EM)).isEqualByComparingTo("-1000000");
+        assertThat(digest(a)).isEqualTo(digest(b));                  // books agree...
+        LedgerSummaryDTO sum = a.store.ledgerSummary("server-a");
+        assertThat(sum.getOverdrawnAccounts()).containsExactly(Node.EM);   // ...and the conflict is visible
+        assertThat(a.auditActions()).contains("OVERDRAFT_DETECTED");
+        assertThat(b.auditActions()).contains("OVERDRAFT_DETECTED");
+    }
+
+    @Test
+    void anEntryForAnAccountTheOtherBranchDoesNotHaveYetIsRetriedNotLost() throws Exception {
+        a.admin.createAccount(Node.ADMIN_TOKEN, "ops", "7007000001", "Khách mới", "HN", m(1_000_000), m(5_000_000), "246810");
+        String s = a.bank.login("7007000001", "246810", "device-new-00001", null).getData().getSession().getSessionId();
+        a.bank.deposit(s, "7007000001", req(), m(500_000), "");
+        a.replication.runOnce();                                     // B has no such account: refused, kept in the outbox
+        assertThat(a.store.outboxStats("server-b").pending()).isEqualTo(1);
+        b.admin.createAccount(Node.ADMIN_TOKEN, "ops", "7007000001", "Khách mới", "HN", m(1_000_000), m(5_000_000), "246810");
+        Thread.sleep(100);                                           // back-off of the rejected entry
+        a.replication.runOnce();
+        assertThat(b.balance("7007000001")).isEqualByComparingTo("1500000");
+        assertThat(a.store.outboxStats("server-b").pending()).isZero();
+    }
+
+    @Test
+    void replicationRejectsWrongSecretAndWrongCaller() {
+        assertThat(b.repl.replicateBatch("server-a", "wrong-secret-wrong-secret", List.of()).getErrorCode()).isEqualTo(ErrorCodes.UNAUTHORIZED);
+        assertThat(b.repl.getTransactionsAfter("intruder", Node.SECRET, 0, 10).getErrorCode()).isEqualTo(ErrorCodes.UNAUTHORIZED);
+        assertThat(b.repl.getPeerStatus("server-a", Node.SECRET).isSuccess()).isTrue();
+    }
+
+    @Test
+    void forgedEntriesAreRejected() {
+        TransactionDTO forged = new TransactionDTO("x-1", Node.AN, com.nexus.banking.contract.enums.TransactionType.DEPOSIT,
+                m(999_999_999), m(0), "", "", java.time.Instant.now(), "server-a", 1, 0, null, null);
+        TransactionDTO claimsOtherOrigin = new TransactionDTO("x-2", Node.AN, com.nexus.banking.contract.enums.TransactionType.DEPOSIT,
+                m(1), m(0), "", "", java.time.Instant.now(), "server-z", 1, 0, null, null);
+        TransactionDTO negative = new TransactionDTO("x-3", Node.AN, com.nexus.banking.contract.enums.TransactionType.DEPOSIT,
+                new java.math.BigDecimal("-5.00"), m(0), "", "", java.time.Instant.now(), "server-a", 2, 0, null, null);
+        ReplicationAck ack = b.repl.replicateBatch("server-a", Node.SECRET, List.of(claimsOtherOrigin, negative)).getData();
+        assertThat(ack.getAcceptedTransactionIds()).isEmpty();
+        assertThat(ack.getRejected()).containsKeys("x-2", "x-3");
+        assertThat(b.balance(Node.AN)).isEqualByComparingTo("50000000");
+        assertThat(forged.getAmount()).isNotNull();
+    }
+
+    @Test
+    void replicatedMoneyIsPushedToTheCustomersDeviceOnTheOtherBranch() {
+        Node.RecordingCallback phone = new Node.RecordingCallback();
+        b.login(Node.CUONG, "device-cuong-0001", phone);
+        String sa = a.login(Node.AN);
+        a.bank.transfer(sa, Node.AN, Node.CUONG, req(), m(1_500_000), "gửi anh Cường");
+        a.replication.runOnce();
+        assertThat(phone.balances).hasSize(1);
+        assertThat(phone.balances.get(0).isFromPeerBranch()).isTrue();
+        assertThat(phone.balances.get(0).getDelta()).isEqualByComparingTo("1500000");
+        assertThat(phone.balances.get(0).getNewBalance()).isEqualByComparingTo("81500000");
+    }
+
+    @Test
+    void loginOnOneBranchEvictsTheSessionOnTheOtherBranch() {
+        Node.RecordingCallback atmHanoi = new Node.RecordingCallback();
+        String s1 = a.login(Node.AN, "device-atm-hn-01", atmHanoi);
+        b.login(Node.AN, "device-phone-hcm1", null);
+        // peer eviction is asynchronous (replication executor / common pool): wait for it
+        long deadline = System.currentTimeMillis() + 3000;
+        while ((a.bank.getAccount(s1, Node.AN).isSuccess() || atmHanoi.evictions.isEmpty()) && System.currentTimeMillis() < deadline) {
+            try { Thread.sleep(20); } catch (InterruptedException e) { break; }
+        }
+        assertThat(a.bank.getAccount(s1, Node.AN).getErrorCode()).isEqualTo(ErrorCodes.SESSION_EVICTED);
+        assertThat(atmHanoi.evictions).hasSize(1);
+        assertThat(atmHanoi.evictions.get(0)).contains("thiết bị khác");
     }
 }

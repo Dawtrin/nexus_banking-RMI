@@ -1,42 +1,46 @@
 package com.nexus.banking.server.service;
 
+import com.nexus.banking.contract.dto.AccountDTO;
 import com.nexus.banking.contract.dto.AuditEntryDTO;
-import com.nexus.banking.contract.dto.ChatRoomDTO;
+import com.nexus.banking.contract.dto.AuditVerificationDTO;
 import com.nexus.banking.contract.dto.ErrorCodes;
-import com.nexus.banking.contract.dto.MemberDTO;
+import com.nexus.banking.contract.dto.LedgerSummaryDTO;
+import com.nexus.banking.contract.dto.Money;
 import com.nexus.banking.contract.dto.OperationResult;
-import com.nexus.banking.contract.dto.RoomSummaryDTO;
-import com.nexus.banking.contract.dto.UserAdminDTO;
-import com.nexus.banking.contract.dto.UserProfileDTO;
+import com.nexus.banking.contract.dto.TransactionDTO;
+import com.nexus.banking.contract.enums.AccountStatus;
 import com.nexus.banking.contract.enums.EventSeverity;
-import com.nexus.banking.contract.remote.AdminRemote;
+import com.nexus.banking.contract.remote.BankingAdminService;
 import com.nexus.banking.server.config.ServerConfig;
 import com.nexus.banking.server.monitoring.SystemLogService;
 import com.nexus.banking.server.service.ClientSessionManager.Session;
-import com.nexus.banking.server.store.ChatStore;
+import com.nexus.banking.server.store.BankingStore;
+import com.nexus.banking.server.store.PinHasher;
 import com.nexus.banking.server.store.StorageException;
 
+import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Administrative actions of this node. Every call is token-authenticated, validated, executed against the real
- * store/session state and recorded in the persistent audit log (success and failure).
+ * Risk-control and operations actions of this node. Every call is token-authenticated, validated, executed against the
+ * real store/session state and recorded in the hash-chained audit ledger (success and failure).
  */
-public class AdminServiceImpl implements AdminRemote {
+public class AdminServiceImpl implements BankingAdminService {
     private final ServerConfig config;
     private final AdminAuth auth;
-    private final ChatStore store;
+    private final BankingStore store;
     private final ClientSessionManager sessions;
     private final PeerReplicationManager replication;
     private final AuditService audit;
     private final SystemLogService logService;
+    private final CallbackNotifier notifier;
 
-    public AdminServiceImpl(ServerConfig config, AdminAuth auth, ChatStore store, ClientSessionManager sessions,
-                            PeerReplicationManager replication, AuditService audit, SystemLogService logService) {
+    public AdminServiceImpl(ServerConfig config, AdminAuth auth, BankingStore store, ClientSessionManager sessions,
+                            PeerReplicationManager replication, AuditService audit, SystemLogService logService,
+                            CallbackNotifier notifier) {
         this.config = config;
         this.auth = auth;
         this.store = store;
@@ -44,6 +48,7 @@ public class AdminServiceImpl implements AdminRemote {
         this.replication = replication;
         this.audit = audit;
         this.logService = logService;
+        this.notifier = notifier;
     }
 
     private <T> OperationResult<T> storageFailure(String actor, String action, String target, StorageException e) {
@@ -53,101 +58,111 @@ public class AdminServiceImpl implements AdminRemote {
     }
 
     @Override
-    public OperationResult<List<RoomSummaryDTO>> listRooms(String adminToken) {
-        OperationResult<List<RoomSummaryDTO>> denied = auth.check(adminToken);
+    public OperationResult<List<AccountDTO>> listAccounts(String adminToken) {
+        OperationResult<List<AccountDTO>> denied = auth.check(adminToken);
         if (denied != null) return denied;
         try {
-            List<RoomSummaryDTO> out = new ArrayList<>();
-            for (ChatRoomDTO r : store.listRooms()) {
-                out.add(new RoomSummaryDTO(r.getRoomId(), r.getRoomName(), r.getDescription(), sessions.memberCount(r.getRoomId()),
-                        store.countMessages(r.getRoomId()), r.getCreatedAt()));
-            }
-            return OperationResult.success(out);
+            return OperationResult.success(store.listAccounts());
         } catch (StorageException e) {
-            return storageFailure("-", "LIST_ROOMS", "rooms", e);
+            return storageFailure("-", "LIST_ACCOUNTS", "accounts", e);
         }
     }
 
     @Override
-    public OperationResult<Void> createRoom(String adminToken, String actor, String roomId, String roomName, String description) {
+    public OperationResult<Void> createAccount(String adminToken, String actor, String accountNumber, String ownerName,
+                                               String branchId, BigDecimal openingBalance, BigDecimal dailyLimit, String pin) {
         OperationResult<Void> denied = auth.check(adminToken);
         if (denied != null) return denied;
         String e = Validation.actor(actor);
-        if (e == null) e = Validation.roomId(roomId);
-        if (e == null) e = Validation.roomName(roomName);
-        if (e == null) e = Validation.roomDescription(description);
+        if (e == null) e = Validation.accountNumber(accountNumber);
+        if (e == null) e = Validation.ownerName(ownerName);
+        if (e == null) e = Validation.branchId(branchId);
+        if (e == null) e = Validation.pin(pin);
+        if (e == null && (openingBalance == null || openingBalance.signum() < 0 || openingBalance.stripTrailingZeros().scale() > 2
+                || openingBalance.compareTo(Money.MAX_BALANCE) > 0)) e = "Số dư đầu kỳ không hợp lệ";
+        if (e == null && (dailyLimit == null || dailyLimit.signum() <= 0 || dailyLimit.stripTrailingZeros().scale() > 2
+                || dailyLimit.compareTo(Money.MAX_BALANCE) > 0)) e = "Hạn mức ngày không hợp lệ";
         if (e != null) return OperationResult.failure(ErrorCodes.VALIDATION, e);
         try {
-            boolean created = store.createRoom(new ChatRoomDTO(roomId, roomName.trim(), description == null ? "" : description, Instant.now()));
-            audit.record(actor, "CREATE_ROOM", roomId, created ? "OK" : "REJECTED", created ? roomName.trim() : "room already exists");
-            return created ? OperationResult.ok("Room created") : OperationResult.failure(ErrorCodes.VALIDATION, "Room '" + roomId + "' already exists");
+            AccountDTO acc = new AccountDTO(accountNumber, ownerName.trim(), openingBalance.setScale(2), branchId,
+                    AccountStatus.ACTIVE, Instant.now(), dailyLimit.setScale(2));
+            boolean created = store.createAccount(acc, PinHasher.hash(pin));
+            audit.record(actor, "OPEN_ACCOUNT", accountNumber, created ? "OK" : "REJECTED",
+                    created ? ownerName.trim() + ", opening " + Money.format(acc.getBalance()) + ", limit " + Money.format(acc.getDailyLimit())
+                            : "account already exists");
+            return created ? OperationResult.ok("Đã mở tài khoản") : OperationResult.failure(ErrorCodes.VALIDATION,
+                    "Tài khoản " + accountNumber + " đã tồn tại");
         } catch (StorageException ex) {
-            return storageFailure(actor, "CREATE_ROOM", roomId, ex);
+            return storageFailure(actor, "OPEN_ACCOUNT", accountNumber, ex);
         }
     }
 
     @Override
-    public OperationResult<Void> updateRoom(String adminToken, String actor, String roomId, String roomName, String description) {
+    public OperationResult<Void> setAccountStatus(String adminToken, String actor, String accountNumber,
+                                                  AccountStatus status, String reason) {
         OperationResult<Void> denied = auth.check(adminToken);
         if (denied != null) return denied;
         String e = Validation.actor(actor);
-        if (e == null) e = Validation.roomId(roomId);
-        if (e == null) e = Validation.roomName(roomName);
-        if (e == null) e = Validation.roomDescription(description);
+        if (e == null) e = Validation.accountNumber(accountNumber);
+        if (e == null && status == null) e = "status is required";
+        if (e == null && reason != null && reason.length() > 200) e = "reason must be at most 200 characters";
         if (e != null) return OperationResult.failure(ErrorCodes.VALIDATION, e);
+        String why = reason == null || reason.isBlank() ? "no reason given" : reason.trim();
         try {
-            boolean ok = store.updateRoom(roomId, roomName.trim(), description == null ? "" : description);
-            audit.record(actor, "UPDATE_ROOM", roomId, ok ? "OK" : "REJECTED", ok ? roomName.trim() : "room not found");
-            return ok ? OperationResult.ok("Room updated") : OperationResult.failure(ErrorCodes.ROOM_NOT_FOUND, "Room '" + roomId + "' does not exist");
-        } catch (StorageException ex) {
-            return storageFailure(actor, "UPDATE_ROOM", roomId, ex);
-        }
-    }
-
-    @Override
-    public OperationResult<Void> deleteRoom(String adminToken, String actor, String roomId) {
-        OperationResult<Void> denied = auth.check(adminToken);
-        if (denied != null) return denied;
-        String e = Validation.actor(actor);
-        if (e == null) e = Validation.roomId(roomId);
-        if (e != null) return OperationResult.failure(ErrorCodes.VALIDATION, e);
-        try {
-            ChatStore.DeleteOutcome out = store.deleteRoom(roomId);
-            audit.record(actor, "DELETE_ROOM", roomId, out == ChatStore.DeleteOutcome.DELETED ? "OK" : "REJECTED", out.name());
-            return switch (out) {
-                case DELETED -> {
-                    sessions.dropRoom(roomId);
-                    yield OperationResult.ok("Room deleted");
-                }
-                case NOT_FOUND -> OperationResult.failure(ErrorCodes.ROOM_NOT_FOUND, "Room '" + roomId + "' does not exist");
-                case NOT_EMPTY -> OperationResult.failure(ErrorCodes.VALIDATION, "Room '" + roomId + "' contains messages and cannot be deleted");
-            };
-        } catch (StorageException ex) {
-            return storageFailure(actor, "DELETE_ROOM", roomId, ex);
-        }
-    }
-
-    @Override
-    public OperationResult<List<MemberDTO>> getRoomMembers(String adminToken, String roomId) {
-        OperationResult<List<MemberDTO>> denied = auth.check(adminToken);
-        if (denied != null) return denied;
-        String e = Validation.roomId(roomId);
-        if (e != null) return OperationResult.failure(ErrorCodes.VALIDATION, e);
-        return OperationResult.success(sessions.membersOf(roomId));
-    }
-
-    @Override
-    public OperationResult<List<UserAdminDTO>> listUsers(String adminToken) {
-        OperationResult<List<UserAdminDTO>> denied = auth.check(adminToken);
-        if (denied != null) return denied;
-        try {
-            List<UserAdminDTO> out = new ArrayList<>();
-            for (UserProfileDTO p : store.listProfiles()) {
-                out.add(new UserAdminDTO(p.getUsername(), p.getDisplayName(), p.getStatus(), sessions.liveSessionsOf(p.getUsername()), p.getLastSeenAt()));
+            boolean ok = store.setAccountStatus(accountNumber, status);
+            audit.record(actor, status == AccountStatus.LOCKED ? "LOCK_ACCOUNT" : "UNLOCK_ACCOUNT", accountNumber,
+                    ok ? "OK" : "REJECTED", ok ? why : "account not found");
+            if (!ok) return OperationResult.failure(ErrorCodes.ACCOUNT_NOT_FOUND, "Không tìm thấy tài khoản " + accountNumber);
+            if (status == AccountStatus.LOCKED) {
+                String msg = "Tài khoản đã bị khóa bởi Trung tâm điều hành: " + why;
+                notifier.accountStatus(accountNumber, status, msg);
+                sessions.evictByAccount(accountNumber, null, msg);
+            } else {
+                notifier.accountStatus(accountNumber, status, "Tài khoản đã được mở khóa");
             }
-            return OperationResult.success(out);
+            return OperationResult.ok(status == AccountStatus.LOCKED ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản");
         } catch (StorageException ex) {
-            return storageFailure("-", "LIST_USERS", "users", ex);
+            return storageFailure(actor, "SET_ACCOUNT_STATUS", accountNumber, ex);
+        }
+    }
+
+    @Override
+    public OperationResult<Void> setDailyLimit(String adminToken, String actor, String accountNumber, BigDecimal newLimit) {
+        OperationResult<Void> denied = auth.check(adminToken);
+        if (denied != null) return denied;
+        String e = Validation.actor(actor);
+        if (e == null) e = Validation.accountNumber(accountNumber);
+        if (e == null && (newLimit == null || newLimit.signum() <= 0 || newLimit.stripTrailingZeros().scale() > 2
+                || newLimit.compareTo(Money.MAX_BALANCE) > 0)) e = "Hạn mức không hợp lệ";
+        if (e != null) return OperationResult.failure(ErrorCodes.VALIDATION, e);
+        try {
+            AccountDTO before = store.findAccount(accountNumber).orElse(null);
+            boolean ok = before != null && store.setDailyLimit(accountNumber, newLimit.setScale(2));
+            audit.record(actor, "CHANGE_LIMIT", accountNumber, ok ? "OK" : "REJECTED", ok
+                    ? Money.format(before.getDailyLimit()) + " -> " + Money.format(newLimit) : "account not found");
+            return ok ? OperationResult.ok("Đã đổi hạn mức") : OperationResult.failure(ErrorCodes.ACCOUNT_NOT_FOUND,
+                    "Không tìm thấy tài khoản " + accountNumber);
+        } catch (StorageException ex) {
+            return storageFailure(actor, "CHANGE_LIMIT", accountNumber, ex);
+        }
+    }
+
+    @Override
+    public OperationResult<List<TransactionDTO>> listTransactions(String adminToken, String accountNumber, int limit) {
+        OperationResult<List<TransactionDTO>> denied = auth.check(adminToken);
+        if (denied != null) return denied;
+        if (limit < 1 || limit > 500) return OperationResult.failure(ErrorCodes.VALIDATION, "limit must be between 1 and 500");
+        if (accountNumber != null && !accountNumber.isBlank()) {
+            String e = Validation.accountNumber(accountNumber);
+            if (e != null) return OperationResult.failure(ErrorCodes.VALIDATION, e);
+        }
+        try {
+            boolean all = accountNumber == null || accountNumber.isBlank();
+            return OperationResult.success(all
+                    ? store.recentTransactionsAll(limit, config.getServerId(), config.getPeerId())
+                    : store.recentTransactions(accountNumber, limit, config.getServerId(), config.getPeerId()));
+        } catch (StorageException ex) {
+            return storageFailure("-", "LIST_TRANSACTIONS", "ledger", ex);
         }
     }
 
@@ -163,9 +178,22 @@ public class AdminServiceImpl implements AdminRemote {
             audit.record(actor, "DISCONNECT_SESSION", sessionId, "REJECTED", "session not found");
             return OperationResult.failure(ErrorCodes.INVALID_SESSION, "Session not found");
         }
-        sessions.disconnect(sessionId);
-        audit.record(actor, "DISCONNECT_SESSION", sessionId, "OK", "user " + s.getUsername());
+        sessions.forceDisconnect(sessionId, "Phiên làm việc đã bị Trung tâm điều hành ngắt kết nối.");
+        audit.record(actor, "DISCONNECT_SESSION", sessionId, "OK", "account " + s.getAccountNumber());
         return OperationResult.ok("Session disconnected");
+    }
+
+    @Override
+    public OperationResult<Integer> disconnectAccount(String adminToken, String actor, String accountNumber, String reason) {
+        OperationResult<Integer> denied = auth.check(adminToken);
+        if (denied != null) return denied;
+        String e = Validation.actor(actor);
+        if (e == null) e = Validation.accountNumber(accountNumber);
+        if (e != null) return OperationResult.failure(ErrorCodes.VALIDATION, e);
+        String why = reason == null || reason.isBlank() ? "Trung tâm điều hành ngắt kết nối khẩn cấp" : reason.trim();
+        int n = sessions.evictByAccount(accountNumber, null, "Phiên làm việc bị ngắt: " + why).size();
+        audit.record(actor, "DISCONNECT_ACCOUNT", accountNumber, "OK", n + " session(s): " + why);
+        return OperationResult.success(n);
     }
 
     @Override
@@ -181,6 +209,30 @@ public class AdminServiceImpl implements AdminRemote {
     }
 
     @Override
+    public OperationResult<AuditVerificationDTO> verifyAuditChain(String adminToken) {
+        OperationResult<AuditVerificationDTO> denied = auth.check(adminToken);
+        if (denied != null) return denied;
+        try {
+            AuditVerificationDTO v = store.verifyAuditChain();
+            if (!v.isValid()) logService.logEvent(EventSeverity.ERROR, "AUDIT", v.getMessage());
+            return OperationResult.success(v);
+        } catch (StorageException ex) {
+            return OperationResult.failure(ErrorCodes.STORAGE_UNAVAILABLE, "Audit log is unavailable: storage error");
+        }
+    }
+
+    @Override
+    public OperationResult<LedgerSummaryDTO> getLedgerSummary(String adminToken) {
+        OperationResult<LedgerSummaryDTO> denied = auth.check(adminToken);
+        if (denied != null) return denied;
+        try {
+            return OperationResult.success(store.ledgerSummary(config.getServerId()));
+        } catch (StorageException ex) {
+            return storageFailure("-", "LEDGER_SUMMARY", "ledger", ex);
+        }
+    }
+
+    @Override
     public OperationResult<Integer> requeueDeadLetters(String adminToken, String actor) {
         OperationResult<Integer> denied = auth.check(adminToken);
         if (denied != null) return denied;
@@ -188,7 +240,7 @@ public class AdminServiceImpl implements AdminRemote {
         if (e != null) return OperationResult.failure(ErrorCodes.VALIDATION, e);
         try {
             int n = replication.requeueDead();
-            audit.record(actor, "REQUEUE_DEAD_LETTERS", config.getPeerId(), "OK", n + " message(s)");
+            audit.record(actor, "REQUEUE_DEAD_LETTERS", config.getPeerId(), "OK", n + " entr(ies)");
             return OperationResult.success(n);
         } catch (StorageException ex) {
             return storageFailure(actor, "REQUEUE_DEAD_LETTERS", config.getPeerId(), ex);
@@ -212,12 +264,15 @@ public class AdminServiceImpl implements AdminRemote {
         if (denied != null) return denied;
         Map<String, String> m = new LinkedHashMap<>();
         m.put("server.id", config.getServerId());
+        m.put("server.branch.name", config.getBranchName());
         m.put("server.advertised.host", config.getAdvertisedHost());
         m.put("server.rmi.registry.port", String.valueOf(config.getRmiRegistryPort()));
         m.put("server.rmi.service.port", String.valueOf(config.getRmiServicePort()));
         m.put("server.peer.id", config.getPeerId());
         m.put("server.peer.host", config.getPeerHost());
         m.put("server.peer.registry.port", String.valueOf(config.getPeerRegistryPort()));
+        m.put("server.session.single", String.valueOf(config.isSingleSessionEnabled()));
+        m.put("server.business.timezone", config.getBusinessZone().getId());
         m.put("database.enabled", String.valueOf(config.getDatabaseConfig().isEnabled()));
         m.put("database.host", config.getDatabaseConfig().getHost());
         m.put("database.port", String.valueOf(config.getDatabaseConfig().getPort()));
@@ -227,6 +282,8 @@ public class AdminServiceImpl implements AdminRemote {
         m.put("replication.poll.millis", String.valueOf(config.getReplicationPollMillis()));
         m.put("replication.catchup.page", String.valueOf(config.getCatchUpPageSize()));
         m.put("replication.max.rejected.attempts", String.valueOf(config.getMaxRejectedAttempts()));
+        m.put("transport.tls", String.valueOf(config.isSslEnabled()));
+        m.put("transport.mtls", String.valueOf(config.isSslNeedClientAuth()));
         m.put("admin.api", config.getAdminToken() == null ? "disabled" : "enabled");
         return OperationResult.success(m);
     }

@@ -6,20 +6,20 @@ import com.nexus.banking.contract.enums.ServerStatus;
 import com.nexus.banking.server.config.ServerConfig;
 import com.nexus.banking.server.database.DatabaseManager;
 import com.nexus.banking.server.monitoring.ServerMetrics;
-import com.nexus.banking.server.store.ChatStore;
+import com.nexus.banking.server.store.BankingStore;
 
 import java.net.InetAddress;
 
 /** Builds the node status from live state only; unknown values stay UNKNOWN / -1, never a hardcoded "ONLINE". */
 public class StatusBuilder {
     private final ServerConfig config;
-    private final ChatStore store;
+    private final BankingStore store;
     private final DatabaseManager db;
     private final ClientSessionManager sessions;
     private final PeerReplicationManager replication;
     private final ServerMetrics metrics;
 
-    public StatusBuilder(ServerConfig config, ChatStore store, DatabaseManager db, ClientSessionManager sessions,
+    public StatusBuilder(ServerConfig config, BankingStore store, DatabaseManager db, ClientSessionManager sessions,
                          PeerReplicationManager replication, ServerMetrics metrics) {
         this.config = config;
         this.store = store;
@@ -46,6 +46,6 @@ public class StatusBuilder {
                 config.getRmiRegistryPort(), config.getRmiServicePort(), self, replication.getPeerStatus(), dbStatus,
                 metrics.getUptimeSeconds(), metrics.getStartedAt(), sessions.activeCount(),
                 (int) Math.max(0, Math.min(Integer.MAX_VALUE, rs.getPendingCount())),
-                replication.getLastSuccessAt(), store.modeLabel());
+                replication.getLastSuccessAt(), store.modeLabel(), config.getBranchName());
     }
 }

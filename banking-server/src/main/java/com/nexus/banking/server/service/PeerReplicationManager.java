@@ -1,20 +1,20 @@
 package com.nexus.banking.server.service;
 
-import com.nexus.banking.contract.dto.ChatMessageDTO;
+import com.nexus.banking.contract.dto.TransactionDTO;
 import com.nexus.banking.contract.dto.OperationResult;
 import com.nexus.banking.contract.dto.ReplicationAck;
 import com.nexus.banking.contract.dto.ReplicationStatusDTO;
 import com.nexus.banking.contract.enums.EventSeverity;
 import com.nexus.banking.contract.enums.PeerSyncStatus;
 import com.nexus.banking.contract.enums.ServerStatus;
-import com.nexus.banking.contract.remote.ReplicationRemote;
+import com.nexus.banking.contract.remote.BankingReplicationService;
 import com.nexus.banking.contract.rmi.RmiSocketFactories;
 import com.nexus.banking.contract.rmi.TimeoutClientSocketFactory;
 import com.nexus.banking.server.config.ServerConfig;
 import com.nexus.banking.server.monitoring.ServerMetrics;
 import com.nexus.banking.server.monitoring.SystemLogService;
 import com.nexus.banking.server.rmi.RmiRegistryManager;
-import com.nexus.banking.server.store.ChatStore;
+import com.nexus.banking.server.store.BankingStore;
 import com.nexus.banking.server.store.IngestResult;
 import com.nexus.banking.server.store.OutboxEntry;
 import com.nexus.banking.server.store.OutboxStats;
@@ -35,11 +35,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Sends outbox entries to the peer and pulls missed history from it.
+ * Sends outbox ledger entries to the peer branch and pulls missed history from it (catch-up).
  *
  * <ul>
- *   <li>Push: outbox rows are sent in order; an entry is marked delivered only for message ids the peer
- *       lists in {@code acceptedMessageIds} (peer committed them durably). Peer rejections are counted per
+ *   <li>Push: outbox rows are sent in order; an entry is marked delivered only for transaction ids the peer
+ *       lists in {@code acceptedTransactionIds} (peer committed them durably). Peer rejections are counted per
  *       entry with exponential backoff and end in DEAD (visible, requeueable) - they never block others.</li>
  *   <li>Pull (catch-up): from the persisted inbound checkpoint, page by page until the peer has nothing
  *       newer; runs on start, after every recovery, while incomplete, and periodically as reconciliation.</li>
@@ -50,7 +50,7 @@ public class PeerReplicationManager implements AutoCloseable {
     /** Opens a (possibly remote) replication endpoint of the peer. */
     @FunctionalInterface
     public interface PeerConnector {
-        ReplicationRemote connect() throws Exception;
+        BankingReplicationService connect() throws Exception;
     }
 
     private static final long RECONCILE_INTERVAL_MILLIS = 10_000;
@@ -58,7 +58,7 @@ public class PeerReplicationManager implements AutoCloseable {
     private static final int MAX_BATCHES_PER_TICK = 20;
 
     private final ServerConfig config;
-    private final ChatStore store;
+    private final BankingStore store;
     private final ServerMetrics metrics;
     private final SystemLogService logService;
     private final PeerConnector connector;
@@ -66,7 +66,7 @@ public class PeerReplicationManager implements AutoCloseable {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean rerun = new AtomicBoolean(false);
 
-    private ReplicationRemote peer;
+    private BankingReplicationService peer;
     private volatile ServerStatus peerStatus = ServerStatus.UNKNOWN;
     private volatile PeerSyncStatus syncStatus = PeerSyncStatus.UNKNOWN;
     private volatile String lastError = "";
@@ -75,9 +75,10 @@ public class PeerReplicationManager implements AutoCloseable {
     private volatile int consecutiveFailures = 0;
     private volatile Instant nextPeerAttemptAt = Instant.EPOCH;
     private volatile boolean needCatchUp = true;
+    private volatile IngestPostProcessor postProcessor;
     private volatile Instant lastCatchUpAt = Instant.EPOCH;
 
-    public PeerReplicationManager(ServerConfig config, ChatStore store, ServerMetrics metrics,
+    public PeerReplicationManager(ServerConfig config, BankingStore store, ServerMetrics metrics,
                                   SystemLogService logService, PeerConnector connector, boolean scheduled) {
         this.config = config;
         this.store = store;
@@ -100,8 +101,12 @@ public class PeerReplicationManager implements AutoCloseable {
         return () -> {
             Registry reg = LocateRegistry.getRegistry(config.getPeerHost(), config.getPeerRegistryPort(),
                     RmiSocketFactories.clientFactory(config.isPeerSslEnabled()));
-            return (ReplicationRemote) reg.lookup(RmiRegistryManager.REPLICATION_SERVICE_NAME);
+            return (BankingReplicationService) reg.lookup(RmiRegistryManager.REPLICATION_SERVICE_NAME);
         };
+    }
+
+    public void setPostProcessor(IngestPostProcessor p) {
+        this.postProcessor = p;
     }
 
     public void start() {
@@ -110,16 +115,17 @@ public class PeerReplicationManager implements AutoCloseable {
         }
     }
 
-    /** Called after a local commit so delivery does not wait for the next poll. */
-    /** Evicts any active session for the given username on the peer server over RMI. */
-    public void evictPeerSession(String username, String reason) {
+    /** Evicts any session of the account on the peer branch over RMI (cluster-wide single session). */
+    public void evictPeerSession(String accountNumber, String exceptClientInstanceId, String reason) {
         Runnable task = () -> {
             try {
-                ReplicationRemote remote = peer();
+                BankingReplicationService remote = peer();
                 if (remote != null) {
-                    remote.evictUserSession(config.getServerId(), config.getReplicationSecret(), username, reason);
+                    remote.evictAccountSession(config.getServerId(), config.getReplicationSecret(), accountNumber,
+                            exceptClientInstanceId, reason);
                 }
             } catch (Exception e) {
+                peer = null;
                 logService.logEvent(EventSeverity.WARN, "REPLICATION",
                         "Could not notify peer of session eviction: " + e.getMessage());
             }
@@ -131,6 +137,7 @@ public class PeerReplicationManager implements AutoCloseable {
         }
     }
 
+    /** Called after a local commit so delivery does not wait for the next poll. */
     public void wake() {
         if (executor != null && !executor.isShutdown()) {
             executor.execute(this::runOnce);
@@ -161,7 +168,7 @@ public class PeerReplicationManager implements AutoCloseable {
         if (now.isBefore(nextPeerAttemptAt)) return;
         lastCheckedAt = now;
         try {
-            ReplicationRemote remote = peer();
+            BankingReplicationService remote = peer();
             OperationResult<?> ping = remote.getPeerStatus(config.getServerId(), config.getReplicationSecret());
             if (!ping.isSuccess()) {
                 onPeerProblem(ServerStatus.DEGRADED, "peer rejected status request: " + ping.getErrorCode() + " " + ping.getMessage(), false);
@@ -180,7 +187,7 @@ public class PeerReplicationManager implements AutoCloseable {
             if (peerStatus == ServerStatus.ONLINE) {
                 OutboxStats stats = store.outboxStats(config.getPeerId());
                 syncStatus = (stats.pending() == 0 && !needCatchUp) ? PeerSyncStatus.SYNCED : PeerSyncStatus.IN_PROGRESS;
-                lastError = stats.dead() > 0 ? stats.dead() + " message(s) dead-lettered; requeue from NEXUS CONTROL" : "";
+                lastError = stats.dead() > 0 ? stats.dead() + " entr(ies) dead-lettered; requeue from NEXUS CONTROL" : "";
                 recordState(syncStatus, null, false);
             }
         } catch (StorageException e) {
@@ -194,7 +201,7 @@ public class PeerReplicationManager implements AutoCloseable {
         }
     }
 
-    private ReplicationRemote peer() throws Exception {
+    private BankingReplicationService peer() throws Exception {
         if (peer == null) peer = connector.connect();
         return peer;
     }
@@ -227,35 +234,36 @@ public class PeerReplicationManager implements AutoCloseable {
 
     // ---- pull ----
 
-    private void catchUp(ReplicationRemote remote) throws Exception {
+    private void catchUp(BankingReplicationService remote) throws Exception {
         int pages = 0;
         while (pages++ < MAX_PAGES_PER_TICK) {
             long checkpoint = store.getInboundCheckpoint(config.getPeerId());
-            OperationResult<List<ChatMessageDTO>> res = remote.getMessagesAfter(
+            OperationResult<List<TransactionDTO>> res = remote.getTransactionsAfter(
                     config.getServerId(), config.getReplicationSecret(), checkpoint, config.getCatchUpPageSize());
             if (!res.isSuccess()) {
                 onPeerProblem(ServerStatus.DEGRADED, "catch-up refused: " + res.getErrorCode() + " " + res.getMessage(), false);
                 return;
             }
-            List<ChatMessageDTO> page = res.getData() == null ? List.of() : res.getData();
+            List<TransactionDTO> page = res.getData() == null ? List.of() : res.getData();
             if (page.isEmpty()) {
                 needCatchUp = false;
                 lastCatchUpAt = Instant.now();
                 return;
             }
-            List<ChatMessageDTO> valid = new ArrayList<>();
-            for (ChatMessageDTO m : page) {
-                String problem = Validation.replicatedMessage(m, config.getPeerId(), config.getServerId());
+            List<TransactionDTO> valid = new ArrayList<>();
+            for (TransactionDTO m : page) {
+                String problem = Validation.replicatedEntry(m, config.getPeerId(), config.getServerId());
                 if (problem == null) valid.add(m);
                 else {
-                    metrics.addRejectedMessages(1);
-                    logService.logEvent(EventSeverity.WARN, "REPLICATION", "Ignored invalid message from peer during catch-up: " + problem);
+                    metrics.addRejectedEntries(1);
+                    logService.logEvent(EventSeverity.WARN, "REPLICATION", "Ignored invalid ledger entry from peer during catch-up: " + problem);
                 }
             }
             IngestResult r = store.ingestReplicated(config.getPeerId(), valid);
-            metrics.addMessagesReplicatedIn(r.accepted().size());
+            if (postProcessor != null) postProcessor.handle(r);
+            else metrics.addEntriesReplicatedIn(r.applied().size());
             long after = store.getInboundCheckpoint(config.getPeerId());
-            long maxSeqInPage = page.stream().mapToLong(ChatMessageDTO::getOriginSequence).max().orElse(checkpoint);
+            long maxSeqInPage = page.stream().mapToLong(TransactionDTO::getOriginSequence).max().orElse(checkpoint);
             if (after <= checkpoint && maxSeqInPage > checkpoint) {
                 // Nothing in the page could be stored (all invalid/rejected): stop instead of looping forever.
                 logService.logEvent(EventSeverity.ERROR, "REPLICATION", "Catch-up made no progress at origin sequence " + checkpoint
@@ -276,12 +284,12 @@ public class PeerReplicationManager implements AutoCloseable {
 
     // ---- push ----
 
-    private void drainOutbox(ReplicationRemote remote) throws Exception {
+    private void drainOutbox(BankingReplicationService remote) throws Exception {
         for (int batchNo = 0; batchNo < MAX_BATCHES_PER_TICK; batchNo++) {
             List<OutboxEntry> due = store.dueOutbox(config.getPeerId(), Instant.now(), config.getReplicationBatchSize());
             if (due.isEmpty()) return;
-            List<ChatMessageDTO> payload = new ArrayList<>();
-            for (OutboxEntry e : due) payload.add(e.message());
+            List<TransactionDTO> payload = new ArrayList<>();
+            for (OutboxEntry e : due) payload.add(e.entry());
             OperationResult<ReplicationAck> res = remote.replicateBatch(config.getServerId(), config.getReplicationSecret(), payload);
             if (!res.isSuccess() || res.getData() == null) {
                 // Whole batch refused/failed transiently (e.g. peer storage down): keep everything pending, back off.
@@ -289,12 +297,12 @@ public class PeerReplicationManager implements AutoCloseable {
                 return;
             }
             ReplicationAck ack = res.getData();
-            Set<String> accepted = new HashSet<>(ack.getAcceptedMessageIds());
+            Set<String> accepted = new HashSet<>(ack.getAcceptedTransactionIds());
             Map<String, String> rejected = ack.getRejected();
             List<Long> delivered = new ArrayList<>();
             boolean progress = false;
             for (OutboxEntry e : due) {
-                String id = e.message().getMessageId();
+                String id = e.entry().getTransactionId();
                 if (accepted.contains(id)) {
                     delivered.add(e.outboxId());
                 } else if (rejected.containsKey(id)) {
@@ -302,15 +310,15 @@ public class PeerReplicationManager implements AutoCloseable {
                             config.getBackoffBaseMillis(), config.getBackoffMaxMillis(), config.getMaxRejectedAttempts());
                     progress = true;
                     if (dead) {
-                        logService.logEvent(EventSeverity.ERROR, "REPLICATION", "Message " + id + " dead-lettered after "
+                        logService.logEvent(EventSeverity.ERROR, "REPLICATION", "Ledger entry " + id + " dead-lettered after "
                                 + config.getMaxRejectedAttempts() + " rejections: " + rejected.get(id));
                     }
                 }
                 // not mentioned in the ack: stays PENDING and is retried
             }
             store.markDelivered(delivered);
-            metrics.addMessagesReplicatedOut(delivered.size());
-            metrics.addRejectedMessages(rejected.size());
+            metrics.addEntriesReplicatedOut(delivered.size());
+            metrics.addRejectedEntries(rejected.size());
             if (!delivered.isEmpty()) {
                 lastSuccessAt = Instant.now();
                 progress = true;
@@ -350,7 +358,7 @@ public class PeerReplicationManager implements AutoCloseable {
     public int requeueDead() throws StorageException {
         int n = store.requeueDead(config.getPeerId(), Instant.now());
         if (n > 0) {
-            logService.logEvent(EventSeverity.INFO, "REPLICATION", "Requeued " + n + " dead-lettered message(s)");
+            logService.logEvent(EventSeverity.INFO, "REPLICATION", "Requeued " + n + " dead-lettered entr(ies)");
             wake();
         }
         return n;

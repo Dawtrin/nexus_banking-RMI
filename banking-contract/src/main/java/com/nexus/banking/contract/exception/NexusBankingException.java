@@ -1,22 +1,22 @@
 package com.nexus.banking.contract.exception;
 
 /**
- * Base checked exception for business and communication errors in NEXUS Chat.
+ * Base checked exception for business and communication errors in NEXUS Banking.
  */
-public class NexusChatException extends Exception {
+public class NexusBankingException extends Exception {
     private final String errorCode;
 
-    public NexusChatException(String message) {
+    public NexusBankingException(String message) {
         super(message);
         this.errorCode = "GENERAL_ERROR";
     }
 
-    public NexusChatException(String errorCode, String message) {
+    public NexusBankingException(String errorCode, String message) {
         super(message);
         this.errorCode = errorCode;
     }
 
-    public NexusChatException(String errorCode, String message, Throwable cause) {
+    public NexusBankingException(String errorCode, String message, Throwable cause) {
         super(message, cause);
         this.errorCode = errorCode;
     }

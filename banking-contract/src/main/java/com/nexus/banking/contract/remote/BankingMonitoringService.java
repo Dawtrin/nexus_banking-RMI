@@ -12,7 +12,7 @@ import java.rmi.RemoteException;
 import java.util.List;
 
 /** Administrative monitoring API. Every method requires the configured admin token (contract v2). */
-public interface MonitoringRemote extends Remote {
+public interface BankingMonitoringService extends Remote {
 
     OperationResult<ServerStatusDTO> getServerStatus(String adminToken) throws RemoteException;
 
@@ -24,6 +24,6 @@ public interface MonitoringRemote extends Remote {
 
     OperationResult<ReplicationStatusDTO> getReplicationStatus(String adminToken) throws RemoteException;
 
-    /** Message counters per time bucket for the last {@code minutes} minutes (1-60). */
+    /** Transaction counters per time bucket for the last {@code minutes} minutes (1-60). */
     OperationResult<List<ThroughputPointDTO>> getThroughput(String adminToken, int minutes) throws RemoteException;
 }

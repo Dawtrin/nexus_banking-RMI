@@ -23,7 +23,7 @@ import java.util.List;
 public class RmiRegistryManager implements AutoCloseable {
     private static final Logger log = LoggerFactory.getLogger(RmiRegistryManager.class);
 
-    public static final String CHAT_SERVICE_NAME = "NexusChatService";
+    public static final String BANKING_SERVICE_NAME = "NexusBankingService";
     public static final String REPLICATION_SERVICE_NAME = "NexusReplicationService";
     public static final String MONITORING_SERVICE_NAME = "NexusMonitoringService";
     public static final String ADMIN_SERVICE_NAME = "NexusAdminService";

@@ -9,14 +9,14 @@ import com.nexus.banking.contract.dto.ServerEventDTO;
 import com.nexus.banking.contract.dto.ServerStatusDTO;
 import com.nexus.banking.contract.dto.ThroughputPointDTO;
 import com.nexus.banking.server.monitoring.ServerMetrics;
-import com.nexus.banking.contract.remote.MonitoringRemote;
+import com.nexus.banking.contract.remote.BankingMonitoringService;
 import com.nexus.banking.server.database.DatabaseManager;
 import com.nexus.banking.server.monitoring.SystemLogService;
 
 import java.util.List;
 
 /** Admin monitoring API: every method requires the configured admin token. */
-public class MonitoringServiceImpl implements MonitoringRemote {
+public class MonitoringServiceImpl implements BankingMonitoringService {
     private final AdminAuth auth;
     private final StatusBuilder statusBuilder;
     private final ClientSessionManager sessions;

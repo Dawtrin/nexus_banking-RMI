@@ -9,27 +9,23 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Per-message outcome of a replication batch. A message id appears in {@code acceptedMessageIds} only
- * after the receiving node has durably committed it (or already held an identical copy).
+ * Per-entry outcome of a replication batch. A transaction id appears in {@code acceptedTransactionIds} only after the
+ * receiving branch has durably committed it (or already held / deliberately suppressed an identical request).
  */
 public class ReplicationAck implements Serializable {
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
-    private final List<String> acceptedMessageIds;
+    private final List<String> acceptedTransactionIds;
     private final Map<String, String> rejected;
 
-    public ReplicationAck(List<String> acceptedMessageIds, Map<String, String> rejected) {
-        this.acceptedMessageIds = acceptedMessageIds == null ? new ArrayList<>() : new ArrayList<>(acceptedMessageIds);
+    public ReplicationAck(List<String> acceptedTransactionIds, Map<String, String> rejected) {
+        this.acceptedTransactionIds = acceptedTransactionIds == null ? new ArrayList<>() : new ArrayList<>(acceptedTransactionIds);
         this.rejected = rejected == null ? new LinkedHashMap<>() : new LinkedHashMap<>(rejected);
     }
 
-    public List<String> getAcceptedMessageIds() {
-        return Collections.unmodifiableList(acceptedMessageIds);
-    }
+    public List<String> getAcceptedTransactionIds() { return Collections.unmodifiableList(acceptedTransactionIds); }
 
-    /** messageId to human-readable rejection reason (permanent for this payload). */
-    public Map<String, String> getRejected() {
-        return Collections.unmodifiableMap(rejected);
-    }
+    /** transactionId to human-readable rejection reason. */
+    public Map<String, String> getRejected() { return Collections.unmodifiableMap(rejected); }
 }
