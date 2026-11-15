@@ -7,12 +7,12 @@ import com.nexus.banking.control.pages.AdminPage;
 import com.nexus.banking.control.pages.AuditPage;
 import com.nexus.banking.control.pages.DashboardPage;
 import com.nexus.banking.control.pages.LogsPage;
-import com.nexus.banking.control.pages.RoomsPage;
+import com.nexus.banking.control.pages.AccountsPage;
+import com.nexus.banking.control.pages.LedgerPage;
 import com.nexus.banking.control.pages.ServersPage;
 import com.nexus.banking.control.pages.SessionsPage;
 import com.nexus.banking.control.pages.SettingsPage;
 import com.nexus.banking.control.pages.TopologyPage;
-import com.nexus.banking.control.pages.UsersPage;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -46,7 +46,7 @@ public class ShellController {
     private final List<ToggleButton> navButtons = new ArrayList<>();
     private AdminPage current;
     private Timeline timer;
-    private final Label updated = new Label("Not refreshed yet");
+    private final Label updated = new Label("Chưa làm mới");
     private final HBox nodeChips = new HBox(6);
 
     @FXML private VBox sidebar;
@@ -62,8 +62,8 @@ public class ShellController {
         pages.add(new DashboardPage(session));
         pages.add(new TopologyPage(session));
         pages.add(new SessionsPage(session));
-        pages.add(new RoomsPage(session));
-        pages.add(new UsersPage(session));
+        pages.add(new AccountsPage(session));
+        pages.add(new LedgerPage(session));
         pages.add(new AuditPage(session));
         pages.add(new LogsPage(session));
         pages.add(new ServersPage(session));
@@ -98,12 +98,12 @@ public class ShellController {
         badge.getStyleClass().add("brand-mark");
         badge.setMinSize(34, 34);
         badge.setMaxSize(34, 34);
-        Label brand = new Label("NEXUS // CONTROL");
+        Label brand = new Label("NEXUS BANKING // CONTROL");
         brand.getStyleClass().add("title-md");
         HBox brandRow = new HBox(10, badge, brand);
         brandRow.setAlignment(Pos.CENTER_LEFT);
         brandRow.setPadding(new Insets(18, 18, 6, 18));
-        Label op = new Label("Signed in as " + session.operator());
+        Label op = new Label("Đăng nhập: " + session.operator());
         op.getStyleClass().add("text-muted");
         op.setPadding(new Insets(0, 18, 14, 18));
         ToggleGroup group = new ToggleGroup();
@@ -125,7 +125,7 @@ public class ShellController {
         });
         Region grow = new Region();
         VBox.setVgrow(grow, Priority.ALWAYS);
-        Button refresh = new Button("Refresh now");
+        Button refresh = new Button("Làm mới ngay");
         refresh.getStyleClass().add("btn-secondary");
         refresh.setMaxWidth(Double.MAX_VALUE);
         refresh.setOnAction(e -> refresh());
@@ -162,7 +162,7 @@ public class ShellController {
         if (started.isEmpty()) return;               // a refresh is already running: never overlap
         started.get().whenComplete((snaps, err) -> Platform.runLater(() -> {
             if (err != null || snaps == null) {
-                updated.setText("Refresh failed: " + (err == null ? "no data" : err.getMessage()));
+                updated.setText("Làm mới lỗi: " + (err == null ? "không có dữ liệu" : err.getMessage()));
                 return;
             }
             session.setLatest(snaps);
@@ -174,10 +174,10 @@ public class ShellController {
     private void renderStatus(List<NodeSnapshot> snaps) {
         nodeChips.getChildren().clear();
         for (NodeSnapshot s : snaps) {
-            nodeChips.getChildren().add(Ui.chip(s.endpoint().label().replace("Node ", "") + (s.ok() ? " ok" : s.stale() ? " stale" : " down"),
+            nodeChips.getChildren().add(Ui.chip(s.endpoint().label().replace("Node ", "") + (s.ok() ? " ok" : s.stale() ? " cũ" : " mất"),
                     s.ok() ? "ok" : "danger"));
         }
-        updated.setText(snaps.isEmpty() ? "Not refreshed yet" : "Updated " + Ui.time(java.time.Instant.now()));
+        updated.setText(snaps.isEmpty() ? "Chưa làm mới" : "Cập nhật " + Ui.time(java.time.Instant.now()));
     }
 
     public void stop() {

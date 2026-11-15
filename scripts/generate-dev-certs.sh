@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Generate Self-Signed TLS/SSL Certificates for NEXUS Distributed Chat (Bash)
+# Generate Self-Signed TLS/SSL Certificates for NEXUS Distributed Banking (Bash)
 # ==============================================================================
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -10,7 +10,7 @@ PASSWORD="nexus-changeit"
 DOMAIN_OR_IP="localhost"
 
 echo "=========================================================="
-echo " NEXUS DISTRIBUTED CHAT - TLS/SSL CERTIFICATE GENERATOR"
+echo " NEXUS DISTRIBUTED BANKING - TLS/SSL CERTIFICATE GENERATOR"
 echo "=========================================================="
 
 if ! command -v keytool >/dev/null 2>&1; then
@@ -36,7 +36,7 @@ keytool -genkeypair \
     -keystore "$KEYSTORE" \
     -storepass "$PASSWORD" \
     -keypass "$PASSWORD" \
-    -dname "CN=$DOMAIN_OR_IP, OU=Nexus, O=NexusChat, C=VN" \
+    -dname "CN=$DOMAIN_OR_IP, OU=Nexus, O=NexusBanking, C=VN" \
     -validity 3650 \
     -ext "SAN=$SAN"
 

@@ -95,7 +95,7 @@ public final class MeshPane extends Pane {
         g.strokeRoundRect(mx - 55, my - 12, 110, 24, 4, 4);
         g.setFont(Font.font("Cascadia Mono", FontWeight.BOLD, 9));
         g.setFill(Color.web("#FA174A"));
-        g.fillText("// REPL_LINK", mx - 34, my + 3);
+        g.fillText("// LEDGER_REPL", mx - 34, my + 3);
 
         // Node A (Cyber Cyan telemetry core)
         g.setFill(Color.web("#00F0FF", 0.18));
@@ -118,9 +118,9 @@ public final class MeshPane extends Pane {
         // Labels
         g.setFont(Font.font("Cascadia Mono", FontWeight.BOLD, 11));
         g.setFill(Color.web("#00F0FF"));
-        g.fillText("// NODE_A : 1099", ax - 45, ay + 34);
+        g.fillText("// CHI NHANH A : HN", ax - 45, ay + 34);
 
         g.setFill(Color.web("#FA174A"));
-        g.fillText("// NODE_B : 2099", bx - 45, by - 24);
+        g.fillText("// CHI NHANH B : HCM", bx - 45, by - 24);
     }
 }

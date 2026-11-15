@@ -14,7 +14,7 @@ import javafx.scene.Scene;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
-/** NEXUS CONTROL: its own application, window and sign-in. It shares only the contract with NEXUS CHAT. */
+/** NEXUS CONTROL: its own application, window and sign-in. It shares only the contract with NEXUS BANKING. */
 public class AdminApplication extends Application {
     private final AdminSession session = new AdminSession(AdminRmi::connect);
     private Stage stage;

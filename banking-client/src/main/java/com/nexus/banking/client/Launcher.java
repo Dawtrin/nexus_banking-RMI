@@ -1,11 +1,8 @@
 package com.nexus.banking.client;
 
-/**
- * Standard launcher main class to bypass JavaFX runtime module path restrictions
- * when executed as a shaded JAR or standalone application.
- */
+/** Plain main class so the app also starts from a classpath/shaded jar (JavaFX needs a non-Application entry point). */
 public class Launcher {
     public static void main(String[] args) {
-        DesktopApplication.main(args);
+        BankingApp.main(args);
     }
 }

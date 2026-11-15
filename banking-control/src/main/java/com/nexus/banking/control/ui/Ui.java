@@ -28,7 +28,7 @@ public final class Ui {
     }
 
     public static String time(Instant i) {
-        return i == null ? "never" : TIME.format(i);
+        return i == null ? "chưa có" : TIME.format(i);
     }
 
     public static Label chip(String text, String kind) {
@@ -76,6 +76,18 @@ public final class Ui {
         l.getStyleClass().add("text-muted");
         l.setWrapText(true);
         return l;
+    }
+
+    /** Single-line text prompt; empty when cancelled. */
+    public static java.util.Optional<String> prompt(javafx.stage.Window owner, String title, String text, String initial) {
+        javafx.scene.control.TextInputDialog d = new javafx.scene.control.TextInputDialog(initial == null ? "" : initial);
+        d.setTitle(title);
+        d.setHeaderText(title);
+        d.setContentText(text);
+        if (owner != null) d.initOwner(owner);
+        d.getDialogPane().getStylesheets().addAll(owner == null || owner.getScene() == null ? java.util.List.of()
+                : owner.getScene().getStylesheets());
+        return d.showAndWait();
     }
 
     public static boolean confirm(javafx.stage.Window owner, String title, String text) {

@@ -35,18 +35,21 @@ public class SessionsPage implements AdminPage {
     public SessionsPage(AdminSession session) {
         this.session = session;
         FilteredList<Row> filtered = new FilteredList<>(rows, r -> true);
-        table = Ui.table(filtered, "No active sessions on the servers that answered.");
-        Ui.column(table, "Server", 90, r -> r.node().label());
-        Ui.column(table, "User", 150, r -> r.s().getUsername());
-        Ui.column(table, "Address seen by the server", 190, r -> r.s().getRemoteIp());
-        Ui.column(table, "Status", 90, r -> r.s().getStatus().name().charAt(0) + r.s().getStatus().name().substring(1).toLowerCase());
-        Ui.column(table, "Connected at", 150, r -> Ui.DATE_TIME.format(r.s().getConnectedAt()));
-        Ui.column(table, "Last activity", 110, r -> Ui.time(r.s().getLastSeenAt()));
+        table = Ui.table(filtered, "Không có phiên làm việc nào trên các chi nhánh đã phản hồi.");
+        Ui.column(table, "Chi nhánh", 100, r -> r.node().label().replace("Node ", "Chi nhánh "));
+        Ui.column(table, "Tài khoản", 120, r -> r.s().getAccountNumber());
+        Ui.column(table, "Chủ tài khoản", 170, r -> r.s().getOwnerName());
+        Ui.column(table, "Thiết bị / địa chỉ IP", 170, r -> r.s().getRemoteIp());
+        Ui.column(table, "Trạng thái", 90, r -> switch (r.s().getStatus()) {
+            case ACTIVE -> "Hoạt động"; case IDLE -> "Rảnh"; case STALE -> "Mất tín hiệu"; default -> "Đã ngắt"; });
+        Ui.column(table, "Đẩy số dư", 90, r -> r.s().isPushEnabled() ? "RMI callback" : "Polling");
+        Ui.column(table, "Đăng nhập lúc", 150, r -> Ui.DATE_TIME.format(r.s().getConnectedAt()));
+        Ui.column(table, "Hoạt động cuối", 110, r -> Ui.time(r.s().getLastSeenAt()));
         TextField filter = new TextField();
-        filter.setPromptText("Filter by user or address");
+        filter.setPromptText("Lọc theo số tài khoản, tên hoặc địa chỉ");
         filter.textProperty().addListener((o, a, b) -> filtered.setPredicate(r -> b == null || b.isBlank()
-                || r.s().getUsername().toLowerCase().contains(b.toLowerCase()) || r.s().getRemoteIp().contains(b)));
-        Button kick = new Button("Disconnect selected");
+                || r.s().getAccountNumber().contains(b) || r.s().getOwnerName().toLowerCase().contains(b.toLowerCase()) || r.s().getRemoteIp().contains(b)));
+        Button kick = new Button("Ngắt phiên đã chọn");
         kick.getStyleClass().add("btn-danger");
         kick.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
         kick.setOnAction(e -> disconnect(table.getSelectionModel().getSelectedItem()));
@@ -54,22 +57,22 @@ public class SessionsPage implements AdminPage {
         VBox body = new VBox(12, new HBox(10, filter, kick, status), table);
         body.setPadding(new Insets(18, 28, 22, 28));
         VBox.setVgrow(body, javafx.scene.layout.Priority.ALWAYS);
-        root.getChildren().addAll(Ui.header("Sessions", "People currently signed in, per server"), body);
+        root.getChildren().addAll(Ui.header("Phiên làm việc", "Khách hàng / giao dịch viên đang đăng nhập, theo từng chi nhánh (mỗi tài khoản chỉ 1 phiên trên toàn cụm)"), body);
     }
 
     private void disconnect(Row r) {
         if (r == null) return;
-        if (!Ui.confirm(root.getScene().getWindow(), "Disconnect " + r.s().getUsername() + "?",
-                "The session on " + r.node().label() + " ends. The person can sign in again."
-                        + "\nThis is recorded in the audit log as " + session.operator() + ".")) return;
+        if (!Ui.confirm(root.getScene().getWindow(), "Ngắt phiên của " + r.s().getAccountNumber() + "?",
+                "Phiên trên " + r.node().label() + " sẽ kết thúc; khách có thể đăng nhập lại."
+                        + "\nThao tác được ghi vào sổ kiểm toán dưới tên " + session.operator() + ".")) return;
         session.background().execute(() -> {
             var res = session.monitor().onNode(r.node(), x -> x.admin().disconnectSession(session.token(), session.operator(), r.s().getSessionId()));
-            Platform.runLater(() -> status.setText(res.isSuccess() ? "Disconnected " + r.s().getUsername() : "Could not disconnect: " + res.getMessage()));
+            Platform.runLater(() -> status.setText(res.isSuccess() ? "Đã ngắt phiên " + r.s().getAccountNumber() : "Không ngắt được: " + res.getMessage()));
         });
     }
 
     @Override
-    public String title() { return "Sessions"; }
+    public String title() { return "Phiên làm việc"; }
 
     @Override
     public Parent view() { return root; }
@@ -82,6 +85,6 @@ public class SessionsPage implements AdminPage {
         rows.setAll(out);
         if (keep != null) out.stream().filter(r -> r.s().getSessionId().equals(keep)).findFirst().ifPresent(r -> table.getSelectionModel().select(r));
         long unavailable = snaps.stream().filter(s -> !s.ok()).count();
-        status.setText(unavailable > 0 ? unavailable + " server(s) did not answer; their sessions are not listed." : "");
+        status.setText(unavailable > 0 ? unavailable + " chi nhánh không phản hồi; phiên của chi nhánh đó không được liệt kê." : "");
     }
 }

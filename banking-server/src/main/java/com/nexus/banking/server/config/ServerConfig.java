@@ -94,7 +94,7 @@ public class ServerConfig {
         this.peerSslEnabled = Boolean.parseBoolean(get("server.peer.ssl.enabled", "NEXUS_PEER_SSL_ENABLED", String.valueOf(this.sslEnabled)));
         // Banking: one customer session per account across the whole cluster is the default.
         this.singleSessionEnabled = Boolean.parseBoolean(get("server.session.single", "NEXUS_SINGLE_SESSION", "true"));
-        this.branchName = get("server.branch.name", "NEXUS_BRANCH_NAME", serverId);
+        this.branchName = get("server.branch.name", "NEXUS_BRANCH_NAME", defaultBranchName(serverId));
         String zone = get("server.business.timezone", "NEXUS_TIMEZONE", "Asia/Ho_Chi_Minh");
         try {
             this.businessZone = java.time.ZoneId.of(zone);
@@ -279,6 +279,18 @@ public class ServerConfig {
     public long getBackoffBaseMillis() { return backoffBaseMillis; }
     public long getBackoffMaxMillis() { return backoffMaxMillis; }
     public boolean isSslEnabled() { return sslEnabled; }
+    /**
+     * Display name when none is configured. Kept in code (not in a launch script) because command-line arguments are
+     * decoded with the operating system locale, which can corrupt Vietnamese characters.
+     */
+    static String defaultBranchName(String serverId) {
+        return switch (serverId) {
+            case "server-a" -> "Chi nhánh Hà Nội";
+            case "server-b" -> "Chi nhánh TP.HCM";
+            default -> serverId;
+        };
+    }
+
     public boolean isSingleSessionEnabled() { return singleSessionEnabled; }
     /** Human readable branch served by this node (shown to customers and operators). */
     public String getBranchName() { return branchName; }

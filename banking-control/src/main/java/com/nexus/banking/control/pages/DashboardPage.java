@@ -24,7 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Cluster overview: node tiles, health checks derived from real answers, and the message-flow chart. */
+/** Tổng quan cụm: trạng thái 2 chi nhánh, kiểm tra sức khỏe từ phản hồi thật, và biểu đồ dòng bút toán. */
 public class DashboardPage implements AdminPage {
     private final VBox root = new VBox();
     private final HBox tiles = new HBox(14);
@@ -35,15 +35,15 @@ public class DashboardPage implements AdminPage {
     private List<NodeSnapshot> last = List.of();
 
     public DashboardPage(AdminSession session) {
-        Label hint = Ui.muted("Everything here comes from the two servers' own answers. A node that does not answer is shown as unavailable.");
-        VBox healthBox = new VBox(14, sectionTitle("Cluster health"), new HBox(20, gauge, checks));
+        Label hint = Ui.muted("Mọi số liệu lấy từ phản hồi thật của hai chi nhánh. Chi nhánh không phản hồi được hiển thị là không khả dụng.");
+        VBox healthBox = new VBox(14, sectionTitle("Sức khỏe cụm"), new HBox(20, gauge, checks));
         healthBox.setMinWidth(400);
         healthBox.setPrefWidth(420);
         chartHolder.getChildren().add(chart);
         chartHolder.setMinHeight(260);
         chartHolder.widthProperty().addListener((o, a, b) -> drawChart());
         chartHolder.heightProperty().addListener((o, a, b) -> drawChart());
-        VBox chartBox = new VBox(10, sectionTitle("Messages in the last 30 minutes"), chartHolder);
+        VBox chartBox = new VBox(10, sectionTitle("Bút toán trong 30 phút gần nhất"), chartHolder);
         VBox.setVgrow(chartHolder, Priority.ALWAYS);
         HBox.setHgrow(chartBox, Priority.ALWAYS);
         HBox lower = new HBox(36, healthBox, chartBox);
@@ -51,7 +51,7 @@ public class DashboardPage implements AdminPage {
         VBox body = new VBox(18, hint, tiles, lower);
         body.setPadding(new Insets(22, 28, 22, 28));
         VBox.setVgrow(body, Priority.ALWAYS);
-        root.getChildren().addAll(Ui.header("Cluster overview", "Health and traffic of both servers"), body);
+        root.getChildren().addAll(Ui.header("Tổng quan cụm", "Sức khỏe và lưu lượng giao dịch của hai chi nhánh"), body);
         onSnapshot(List.of());
     }
 
@@ -62,7 +62,7 @@ public class DashboardPage implements AdminPage {
     }
 
     @Override
-    public String title() { return "Cluster overview"; }
+    public String title() { return "Tổng quan"; }
 
     @Override
     public Parent view() { return root; }
@@ -93,24 +93,31 @@ public class DashboardPage implements AdminPage {
             String word;
             if (s.status() == null) {
                 kind = "danger";
-                word = "No data";
+                word = "Không có dữ liệu";
             } else if (!s.ok()) {
                 kind = "danger";
-                word = "Unavailable";
+                word = "Không khả dụng";
             } else {
                 ServerStatus st = s.status().getServerStatus();
                 kind = st == ServerStatus.ONLINE ? "ok" : st == ServerStatus.DEGRADED ? "warn" : "danger";
                 word = st.name().charAt(0) + st.name().substring(1).toLowerCase();
             }
-            tiles.getChildren().add(tile(s.endpoint().label(), s.endpoint().address(), kind, word + (s.stale() ? " (last known)" : "")));
+            tiles.getChildren().add(tile(s.endpoint().label(), s.endpoint().address(), kind, word + (s.stale() ? " (số liệu cũ)" : "")));
             if (s.ok() && s.status() != null) sessions += s.status().getActiveSessionCount();
             if (s.ok()) {
                 List<ThroughputPointDTO> t = s.throughput();
                 for (int i = Math.max(0, t.size() - 6); i < t.size(); i++) storedLastMinute += t.get(i).getStored();
             }
         }
-        tiles.getChildren().add(tile("People signed in", String.valueOf(sessions), null, "across answering servers"));
-        tiles.getChildren().add(tile("Messages sent, last minute", String.valueOf(storedLastMinute), null, "typed by people on either server"));
+        for (NodeSnapshot s : snaps) {
+            if (s.ok() && s.ledger() != null) {
+                tiles.getChildren().add(tile("Tổng số dư " + s.endpoint().label().replace("Node ", "CN "),
+                        com.nexus.banking.contract.dto.Money.format(s.ledger().getTotalBalance()), null,
+                        s.ledger().getTransactionCount() + " bút toán trong sổ"));
+            }
+        }
+        tiles.getChildren().add(tile("Phiên đang đăng nhập", String.valueOf(sessions), null, "trên các chi nhánh phản hồi"));
+        tiles.getChildren().add(tile("Bút toán, 1 phút qua", String.valueOf(storedLastMinute), null, "ghi nhận tại cả hai chi nhánh"));
         drawHealth();
         drawChart();
     }
@@ -118,13 +125,18 @@ public class DashboardPage implements AdminPage {
     private Map<String, Boolean> healthChecks() {
         Map<String, Boolean> m = new LinkedHashMap<>();
         boolean allOk = !last.isEmpty() && last.stream().allMatch(NodeSnapshot::ok);
-        m.put("Both servers answer", allOk);
-        m.put("Databases connected and durable", allOk && last.stream().allMatch(s -> s.status().getDatabaseStatus() == ServerStatus.ONLINE
+        m.put("Cả hai chi nhánh phản hồi", allOk);
+        m.put("CSDL đã kết nối và bền vững (MySQL)", allOk && last.stream().allMatch(s -> s.status().getDatabaseStatus() == ServerStatus.ONLINE
                 && "MYSQL_DURABLE".equals(s.status().getPersistenceMode())));
-        m.put("Servers see each other", allOk && last.stream().allMatch(s -> s.replication() != null
+        m.put("Hai chi nhánh thấy nhau (mesh)", allOk && last.stream().allMatch(s -> s.replication() != null
                 && s.replication().getPeerStatus() == ServerStatus.ONLINE));
-        m.put("Replication backlog is empty", allOk && last.stream().allMatch(s -> s.replication() != null && s.replication().getPendingCount() == 0));
-        m.put("No dead-lettered messages", allOk && last.stream().allMatch(s -> s.replication() != null && s.replication().getDeadLetterCount() == 0));
+        m.put("Không còn bút toán chờ đồng bộ", allOk && last.stream().allMatch(s -> s.replication() != null && s.replication().getPendingCount() == 0));
+        m.put("Không có bút toán bị kẹt (dead-letter)", allOk && last.stream().allMatch(s -> s.replication() != null && s.replication().getDeadLetterCount() == 0));
+        boolean converged = allOk && last.size() >= 2 && last.get(0).ledger() != null && last.get(1).ledger() != null
+                && last.get(0).ledger().getBalanceDigest().equals(last.get(1).ledger().getBalanceDigest());
+        m.put("Số dư mọi tài khoản khớp giữa 2 chi nhánh", converged);
+        boolean noOverdraft = allOk && last.stream().allMatch(s -> s.ledger() != null && s.ledger().getOverdrawnAccounts().isEmpty());
+        m.put("Không có tài khoản âm sau hợp nhất", noOverdraft);
         return m;
     }
 
@@ -134,7 +146,7 @@ public class DashboardPage implements AdminPage {
         int pass = 0;
         for (Map.Entry<String, Boolean> e : m.entrySet()) {
             if (e.getValue()) pass++;
-            Label mark = Ui.chip(e.getValue() ? "Pass" : last.isEmpty() ? "Unknown" : "Check", e.getValue() ? "ok" : last.isEmpty() ? "neutral" : "warn");
+            Label mark = Ui.chip(e.getValue() ? "Đạt" : last.isEmpty() ? "Chưa rõ" : "Kiểm tra", e.getValue() ? "ok" : last.isEmpty() ? "neutral" : "warn");
             HBox row = new HBox(10, mark, new Label(e.getKey()));
             row.setAlignment(Pos.CENTER_LEFT);
             row.getStyleClass().add("check-row");
@@ -154,7 +166,7 @@ public class DashboardPage implements AdminPage {
         g.fillText(txt, 75 - txt.length() * 9, 82);
         g.setFont(javafx.scene.text.Font.font("System", 11));
         g.setFill(Color.web("#A1A1AA"));
-        g.fillText("checks pass", 46, 102);
+        g.fillText("mục đạt", 46, 102);
     }
 
     private void drawChart() {
@@ -171,7 +183,7 @@ public class DashboardPage implements AdminPage {
         int n = Math.max(a.size(), b.size());
         if (n < 2) {
             g.setFill(Color.web("#71717A"));
-            g.fillText("No traffic data: no server has answered yet.", left, h / 2);
+            g.fillText("Chưa có dữ liệu: chưa chi nhánh nào phản hồi.", left, h / 2);
             return;
         }
         double[] sent = new double[n], ab = new double[n], ba = new double[n];
@@ -191,14 +203,14 @@ public class DashboardPage implements AdminPage {
             g.strokeLine(left, y, left + pw, y);
             g.fillText(String.valueOf((int) (max * k / 4)), 6, y + 4);
         }
-        g.fillText("30 min ago", left, h - 10);
-        g.fillText("now", left + pw - 20, h - 10);
+        g.fillText("30 phút trước", left, h - 10);
+        g.fillText("nay", left + pw - 20, h - 10);
         plot(g, sent, max, left, top, pw, ph, Color.web("#FA174A"));
         plot(g, ab, max, left, top, pw, ph, Color.web("#00F0FF"));
         plot(g, ba, max, left, top, pw, ph, Color.web("#22C55E"));
         double lx = left;
         double step = Math.min(140, pw / 3);
-        for (Object[] leg : new Object[][]{{"Sent", "#9D8CFF"}, {"A to B", "#3B82F6"}, {"B to A", "#22C55E"}}) {
+        for (Object[] leg : new Object[][]{{"Ghi sổ", "#9D8CFF"}, {"A sang B", "#3B82F6"}, {"B sang A", "#22C55E"}}) {
             g.setFill(Color.web((String) leg[1]));
             g.fillOval(lx, 8, 9, 9);
             g.setFill(Color.web("#A1A1AA"));

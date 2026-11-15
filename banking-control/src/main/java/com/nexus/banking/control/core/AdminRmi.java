@@ -1,7 +1,7 @@
 package com.nexus.banking.control.core;
 
-import com.nexus.banking.contract.remote.AdminRemote;
-import com.nexus.banking.contract.remote.MonitoringRemote;
+import com.nexus.banking.contract.remote.BankingAdminService;
+import com.nexus.banking.contract.remote.BankingMonitoringService;
 import com.nexus.banking.contract.rmi.RmiSocketFactories;
 
 import java.rmi.registry.LocateRegistry;
@@ -17,8 +17,8 @@ public final class AdminRmi {
 
     public static ClusterMonitor.NodeRemotes connect(String host, int port, boolean useSsl) throws Exception {
         Registry registry = LocateRegistry.getRegistry(host, port, RmiSocketFactories.clientFactory(useSsl));
-        return new ClusterMonitor.NodeRemotes((MonitoringRemote) registry.lookup(MONITORING_SERVICE_NAME),
-                (AdminRemote) registry.lookup(ADMIN_SERVICE_NAME));
+        return new ClusterMonitor.NodeRemotes((BankingMonitoringService) registry.lookup(MONITORING_SERVICE_NAME),
+                (BankingAdminService) registry.lookup(ADMIN_SERVICE_NAME));
     }
 
     public static ClusterMonitor.NodeRemotes connect(String host, int port) throws Exception {

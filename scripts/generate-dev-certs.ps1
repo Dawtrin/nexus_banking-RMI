@@ -1,5 +1,5 @@
 # ==============================================================================
-# Generate Self-Signed TLS/SSL Certificates for NEXUS Distributed Chat
+# Generate Self-Signed TLS/SSL Certificates for NEXUS Distributed Banking
 # Uses JDK's built-in 'keytool' to create PKCS12 keystore and truststore
 # ==============================================================================
 [CmdletBinding()]
@@ -13,7 +13,7 @@ $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot '..')
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host " NEXUS DISTRIBUTED CHAT - TLS/SSL CERTIFICATE GENERATOR" -ForegroundColor Cyan
+Write-Host " NEXUS DISTRIBUTED BANKING - TLS/SSL CERTIFICATE GENERATOR" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 if (-not (Get-Command keytool -ErrorAction SilentlyContinue)) {
@@ -59,7 +59,7 @@ if (Test-Path $certPath) { Remove-Item $certPath -Force }
     -keystore $keystorePath `
     -storepass $Password `
     -keypass $Password `
-    -dname "CN=$DomainOrIp, OU=Nexus Distributed Chat, O=Nexus, C=VN" `
+    -dname "CN=$DomainOrIp, OU=Nexus Distributed Banking, O=Nexus, C=VN" `
     -validity 3650 `
     -ext "SAN=$sanString"
 
@@ -94,9 +94,9 @@ Write-Host ""
 Write-Host "HOW TO RUN WITH TLS/SSL:" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "1. Run Server Node A (TLS/SSL enabled):" -ForegroundColor White
-Write-Host "   powershell -ExecutionPolicy Bypass -File .\scripts\run-server-a.ps1 -Ssl" -ForegroundColor Gray
+Write-Host "   powershell -ExecutionPolicy Bypass -File .\scripts\run-node-a.ps1 -Ssl" -ForegroundColor Gray
 Write-Host ""
-Write-Host "2. Run NEXUS CHAT (Desktop Client):" -ForegroundColor White
+Write-Host "2. Run NEXUS BANKING (Desktop Client):" -ForegroundColor White
 Write-Host "   Check the 'Use TLS / SSL encryption' box on the login screen," -ForegroundColor Gray
 Write-Host "   or run: mvn -pl banking-client -am javafx:run" -ForegroundColor Gray
 Write-Host ""

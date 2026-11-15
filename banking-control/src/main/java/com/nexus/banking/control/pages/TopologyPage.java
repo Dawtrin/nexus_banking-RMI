@@ -37,11 +37,11 @@ public class TopologyPage implements AdminPage {
         VBox body = new VBox(12, holder, summary);
         body.setPadding(new Insets(18, 28, 22, 28));
         VBox.setVgrow(body, Priority.ALWAYS);
-        root.getChildren().addAll(Ui.header("Cluster topology", "How the two servers are connected right now"), body);
+        root.getChildren().addAll(Ui.header("Sơ đồ mạng lưới", "Hai chi nhánh đang kết nối với nhau như thế nào (replication sổ cái 2 chiều)"), body);
     }
 
     @Override
-    public String title() { return "Cluster topology"; }
+    public String title() { return "Sơ đồ mạng lưới"; }
 
     @Override
     public Parent view() { return root; }
@@ -54,10 +54,10 @@ public class TopologyPage implements AdminPage {
         for (NodeSnapshot s : snaps) {
             ReplicationStatusDTO r = s.replication();
             sb.append(s.endpoint().label()).append(": ");
-            if (r == null) sb.append(s.ok() ? "no replication report" : "unavailable - " + s.error());
+            if (r == null) sb.append(s.ok() ? "chưa có báo cáo đồng bộ" : "không khả dụng - " + s.error());
             else {
-                sb.append("last push or pull success ").append(Ui.time(r.getLastSuccessAt())).append(", state ").append(r.getSyncStatus());
-                if (r.getLastError() != null && !r.getLastError().isBlank()) sb.append(", last error: ").append(r.getLastError());
+                sb.append("đồng bộ thành công lần cuối ").append(Ui.time(r.getLastSuccessAt())).append(", trạng thái ").append(r.getSyncStatus());
+                if (r.getLastError() != null && !r.getLastError().isBlank()) sb.append(", lỗi gần nhất: ").append(r.getLastError());
             }
             sb.append("\n");
         }
@@ -102,15 +102,15 @@ public class TopologyPage implements AdminPage {
         g.setFill(Color.web("#A1A1AA"));
         g.fillText(s == null ? "" : s.endpoint().address(), x + 16, y + 48);
         g.setFill(c);
-        String state = s == null || s.status() == null ? "No data yet" : !s.ok() ? "Unavailable" : s.status().getServerStatus().name().charAt(0) + s.status().getServerStatus().name().substring(1).toLowerCase();
+        String state = s == null || s.status() == null ? "Chưa có dữ liệu" : !s.ok() ? "Không khả dụng" : s.status().getServerStatus().name().charAt(0) + s.status().getServerStatus().name().substring(1).toLowerCase();
         g.setFont(Font.font("System", FontWeight.BOLD, 13));
-        g.fillText(state + (s != null && s.stale() ? " (last known)" : ""), x + 16, y + 74);
+        g.fillText(state + (s != null && s.stale() ? " (số liệu cũ)" : ""), x + 16, y + 74);
         g.setFill(Color.web("#A1A1AA"));
         g.setFont(Font.font("System", 12));
         if (s != null && s.status() != null) {
-            g.fillText("Storage: " + s.status().getPersistenceMode(), x + 16, y + 98);
-            g.fillText("People signed in: " + s.status().getActiveSessionCount(), x + 16, y + 118);
-            g.fillText("Server id: " + s.status().getServerId(), x + 16, y + 138);
+            g.fillText("Lưu trữ: " + s.status().getPersistenceMode(), x + 16, y + 98);
+            g.fillText("Phiên đăng nhập: " + s.status().getActiveSessionCount(), x + 16, y + 118);
+            g.fillText("Mã node: " + s.status().getServerId(), x + 16, y + 138);
         }
     }
 
@@ -122,21 +122,21 @@ public class TopologyPage implements AdminPage {
         boolean dashed = false;
         if (sender == null || !sender.ok() || r == null) {
             c = Color.web("#71717A");
-            text = "unknown";
+            text = "chưa rõ";
             dashed = true;
         } else if (r.getPeerStatus() != ServerStatus.ONLINE) {
             c = Color.web("#FA174A");
-            text = "no link (" + r.getPeerStatus().name().toLowerCase() + ")";
+            text = "mất liên kết (" + r.getPeerStatus().name().toLowerCase() + ")";
             dashed = true;
         } else if (r.getDeadLetterCount() > 0) {
             c = Color.web("#FA174A");
-            text = r.getDeadLetterCount() + " dead-lettered";
+            text = r.getDeadLetterCount() + " bị kẹt";
         } else if (r.getPendingCount() > 0) {
             c = Color.web("#F59E0B");
-            text = r.getPendingCount() + " waiting";
+            text = r.getPendingCount() + " đang chờ";
         } else {
             c = Color.web("#22C55E");
-            text = "in sync";
+            text = "đã đồng bộ";
         }
         g.setStroke(c);
         g.setLineWidth(3);

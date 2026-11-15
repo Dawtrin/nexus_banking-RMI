@@ -1,0 +1,134 @@
+/* NEXUS BANKING - dark fintech theme */
+.root {
+    -bg: #0A0F1E;
+    -surface: #121A2E;
+    -surface-2: #182340;
+    -line: #24304F;
+    -text: #E8ECF8;
+    -muted: #93A0C0;
+    -faint: #5F6C8C;
+    -accent: #22D3EE;
+    -accent-2: #6366F1;
+    -ok: #34D399;
+    -warn: #FBBF24;
+    -danger: #FB7185;
+    -fx-background-color: -bg;
+    -fx-font-family: "Segoe UI", "Inter", "Noto Sans", "DejaVu Sans", sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: -text;
+    -fx-base: #121A2E;
+    -fx-control-inner-background: #121A2E;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.label { -fx-text-fill: -text; }
+.text-muted { -fx-text-fill: -muted; }
+.text-faint { -fx-text-fill: -faint; -fx-font-size: 12px; }
+.text-mono { -fx-font-family: "Cascadia Mono", "Consolas", "DejaVu Sans Mono", monospace; }
+.title-xl { -fx-font-size: 30px; -fx-font-weight: 800; }
+.title-lg { -fx-font-size: 22px; -fx-font-weight: 700; }
+.title-md { -fx-font-size: 16px; -fx-font-weight: 700; }
+.section-title { -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: -faint; }
+.form-label { -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: -muted; }
+
+/* ---------------------------------------------------------------- surfaces */
+.surface { -fx-background-color: -surface; -fx-background-radius: 16; -fx-border-color: -line; -fx-border-radius: 16; -fx-border-width: 1; }
+.surface-2 { -fx-background-color: -surface-2; -fx-background-radius: 12; }
+.sidebar { -fx-background-color: #0D1426; -fx-border-color: transparent -line transparent transparent; -fx-border-width: 1; }
+.page-header { -fx-border-color: transparent transparent -line transparent; -fx-border-width: 1; }
+.brand-mark { -fx-background-color: linear-gradient(to bottom right, -accent, -accent-2); -fx-background-radius: 10; }
+.brand-mark-text { -fx-text-fill: #06101F; -fx-font-weight: 900; -fx-font-size: 18px; }
+
+/* --------------------------------------------------------------------- nav */
+.nav-item { -fx-background-color: transparent; -fx-text-fill: -muted; -fx-background-radius: 10; -fx-padding: 11 14 11 14; -fx-alignment: center-left; -fx-font-size: 14px; -fx-cursor: hand; }
+.nav-item:hover { -fx-background-color: #151F3A; -fx-text-fill: -text; }
+.nav-item:selected { -fx-background-color: linear-gradient(to right, rgba(34,211,238,0.18), rgba(99,102,241,0.10)); -fx-text-fill: -accent; -fx-font-weight: 700; }
+
+/* ----------------------------------------------------------------- buttons */
+.btn-primary { -fx-background-color: linear-gradient(to right, #22D3EE, #6366F1); -fx-text-fill: #04101F; -fx-font-weight: 800; -fx-background-radius: 12; -fx-padding: 12 22 12 22; -fx-cursor: hand; }
+.btn-primary:hover { -fx-effect: dropshadow(gaussian, rgba(34,211,238,0.45), 18, 0.2, 0, 2); }
+.btn-primary:disabled { -fx-opacity: 0.45; }
+.btn-secondary { -fx-background-color: #1B2748; -fx-text-fill: -text; -fx-font-weight: 600; -fx-background-radius: 12; -fx-padding: 11 18 11 18; -fx-cursor: hand; -fx-border-color: -line; -fx-border-radius: 12; }
+.btn-secondary:hover { -fx-background-color: #223059; }
+.btn-danger { -fx-background-color: rgba(251,113,133,0.15); -fx-text-fill: -danger; -fx-font-weight: 700; -fx-background-radius: 12; -fx-padding: 11 18 11 18; -fx-cursor: hand; -fx-border-color: rgba(251,113,133,0.5); -fx-border-radius: 12; }
+.btn-ghost { -fx-background-color: transparent; -fx-text-fill: -muted; -fx-cursor: hand; -fx-padding: 8 12 8 12; }
+.btn-ghost:hover { -fx-text-fill: -text; }
+.quick-action { -fx-background-color: -surface; -fx-background-radius: 16; -fx-border-color: -line; -fx-border-radius: 16; -fx-padding: 18 16 18 16; -fx-cursor: hand; -fx-alignment: center-left; -fx-content-display: left; -fx-graphic-text-gap: 14; }
+.quick-action:hover { -fx-background-color: -surface-2; -fx-border-color: -accent; }
+.action-icon { -fx-background-radius: 12; -fx-min-width: 44; -fx-min-height: 44; -fx-alignment: center; }
+.action-icon-deposit { -fx-background-color: rgba(52,211,153,0.16); }
+.action-icon-withdraw { -fx-background-color: rgba(251,191,36,0.16); }
+.action-icon-transfer { -fx-background-color: rgba(99,102,241,0.22); }
+.amount-chip { -fx-background-color: #1B2748; -fx-text-fill: -muted; -fx-background-radius: 20; -fx-padding: 6 14 6 14; -fx-cursor: hand; -fx-border-color: -line; -fx-border-radius: 20; }
+.amount-chip:hover { -fx-text-fill: -accent; -fx-border-color: -accent; }
+
+/* ------------------------------------------------------------------ inputs */
+.text-field, .password-field, .combo-box-base {
+    -fx-background-color: #0E1630; -fx-text-fill: -text; -fx-prompt-text-fill: -faint; -fx-background-radius: 12;
+    -fx-border-color: -line; -fx-border-radius: 12; -fx-padding: 11 14 11 14; }
+.text-field:focused, .password-field:focused { -fx-border-color: -accent; }
+.input-big { -fx-font-size: 26px; -fx-font-weight: 700; -fx-padding: 14 16 14 16; }
+.combo-box .list-cell { -fx-text-fill: -text; -fx-background-color: transparent; }
+.combo-box-popup .list-view { -fx-background-color: -surface; -fx-border-color: -line; }
+.combo-box-popup .list-cell { -fx-text-fill: -text; -fx-background-color: -surface; -fx-padding: 8 12 8 12; }
+.combo-box-popup .list-cell:hover { -fx-background-color: -surface-2; }
+.check-box { -fx-text-fill: -muted; }
+.check-box .box { -fx-background-color: #0E1630; -fx-border-color: -line; -fx-background-radius: 5; -fx-border-radius: 5; }
+.check-box:selected .mark { -fx-background-color: -accent; }
+.toggle-chip { -fx-background-color: #0E1630; -fx-text-fill: -muted; -fx-background-radius: 12; -fx-border-color: -line; -fx-border-radius: 12; -fx-padding: 11 18 11 18; -fx-cursor: hand; }
+.toggle-chip:selected { -fx-background-color: rgba(34,211,238,0.14); -fx-text-fill: -accent; -fx-border-color: -accent; -fx-font-weight: 700; }
+.titled-pane { -fx-text-fill: -muted; }
+.titled-pane > .title { -fx-background-color: transparent; -fx-text-fill: -muted; }
+.titled-pane > .content { -fx-background-color: transparent; -fx-border-color: transparent; }
+
+/* ------------------------------------------------------------------ chips */
+.chip { -fx-background-radius: 20; -fx-padding: 4 11 4 11; -fx-font-size: 12px; -fx-font-weight: 700; }
+.chip-ok { -fx-background-color: rgba(52,211,153,0.14); -fx-text-fill: -ok; }
+.chip-warn { -fx-background-color: rgba(251,191,36,0.14); -fx-text-fill: -warn; }
+.chip-danger { -fx-background-color: rgba(251,113,133,0.14); -fx-text-fill: -danger; }
+.chip-info { -fx-background-color: rgba(34,211,238,0.12); -fx-text-fill: -accent; }
+.chip-neutral { -fx-background-color: #1B2748; -fx-text-fill: -muted; }
+
+/* ---------------------------------------------------------------- balance */
+.balance-big { -fx-font-size: 44px; -fx-font-weight: 800; -fx-text-fill: -text; }
+.balance-flash-up { -fx-text-fill: -ok; }
+.balance-flash-down { -fx-text-fill: -danger; }
+.amount-in { -fx-text-fill: -ok; -fx-font-weight: 700; }
+.amount-out { -fx-text-fill: -danger; -fx-font-weight: 700; }
+.progress-bar { -fx-accent: -accent; }
+.progress-bar > .track { -fx-background-color: #0E1630; -fx-background-radius: 6; }
+.progress-bar > .bar { -fx-background-radius: 6; -fx-background-color: linear-gradient(to right, #22D3EE, #6366F1); -fx-padding: 4; }
+.progress-bar.limit-high > .bar { -fx-background-color: linear-gradient(to right, #FBBF24, #FB7185); }
+
+/* ------------------------------------------------------------------ cards */
+.bank-card-label { -fx-text-fill: rgba(255,255,255,0.78); -fx-font-size: 11px; -fx-font-weight: 700; }
+.bank-card-number { -fx-text-fill: white; -fx-font-size: 22px; -fx-font-weight: 700; -fx-font-family: "Cascadia Mono", "Consolas", "DejaVu Sans Mono", monospace; }
+.bank-card-name { -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: 700; }
+.bank-card-brand { -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: 900; }
+.tx-row { -fx-padding: 12 4 12 4; -fx-border-color: transparent transparent -line transparent; }
+.tx-icon { -fx-background-radius: 20; -fx-min-width: 38; -fx-min-height: 38; -fx-alignment: center; }
+.banner-error { -fx-background-color: rgba(251,113,133,0.12); -fx-border-color: rgba(251,113,133,0.5); -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 10 14 10 14; }
+.banner-warn { -fx-background-color: rgba(251,191,36,0.12); -fx-border-color: rgba(251,191,36,0.5); -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 10 14 10 14; }
+.toast { -fx-background-color: #16213F; -fx-background-radius: 14; -fx-border-color: -line; -fx-border-radius: 14; -fx-padding: 14 18 14 18; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 24, 0.2, 0, 6); }
+.toast-in { -fx-border-color: -ok; }
+.toast-out { -fx-border-color: -danger; }
+.toast-info { -fx-border-color: -accent; }
+.overlay { -fx-background-color: rgba(5,8,18,0.78); }
+.dialog-card { -fx-background-color: -surface; -fx-background-radius: 20; -fx-border-color: -line; -fx-border-radius: 20; -fx-padding: 26; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 30, 0.2, 0, 10); }
+.receipt-line { -fx-padding: 6 0 6 0; }
+.receipt-dash { -fx-border-color: -line transparent transparent transparent; -fx-border-style: dashed; -fx-border-width: 1; }
+
+/* ------------------------------------------------------------------ table */
+.table-view { -fx-background-color: -surface; -fx-background-radius: 16; -fx-border-color: -line; -fx-border-radius: 16; -fx-padding: 0; }
+.table-view .column-header-background { -fx-background-color: #0F1830; -fx-background-radius: 16 16 0 0; }
+.table-view .column-header, .table-view .filler { -fx-background-color: transparent; -fx-border-color: transparent; -fx-size: 40; }
+.table-view .column-header .label { -fx-text-fill: -faint; -fx-font-size: 12px; -fx-font-weight: 700; -fx-alignment: center-left; }
+.table-row-cell { -fx-background-color: transparent; -fx-border-color: transparent transparent -line transparent; -fx-table-cell-border-color: transparent; -fx-cell-size: 46; }
+.table-row-cell:odd { -fx-background-color: rgba(255,255,255,0.015); }
+.table-row-cell:selected { -fx-background-color: rgba(34,211,238,0.10); }
+.table-cell { -fx-text-fill: -text; -fx-alignment: center-left; -fx-padding: 0 10 0 10; }
+.scroll-bar { -fx-background-color: transparent; }
+.scroll-bar .thumb { -fx-background-color: #2A3760; -fx-background-radius: 6; }
+.scroll-bar .increment-button, .scroll-bar .decrement-button { -fx-padding: 0; }
+.scroll-pane, .scroll-pane > .viewport { -fx-background-color: transparent; }
+.tooltip { -fx-background-color: #16213F; -fx-text-fill: -text; -fx-background-radius: 8; }

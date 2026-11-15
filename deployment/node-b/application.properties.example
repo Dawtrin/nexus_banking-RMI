@@ -2,6 +2,8 @@
 # secrets come from environment variables (${NAME} references are expanded).
 # Precedence: --key=value  >  -Dkey=value  >  environment variable  >  this file  >  default
 server.id=server-b
+# Display name of this branch (UTF-8 file, so Vietnamese is safe here; avoid it on the command line)
+server.branch.name=Chi nhánh TP.HCM
 server.peer.id=server-a
 # THIS machine's LAN address (what clients and the peer must be able to reach). Never 127.0.0.1 across machines.
 server.advertised.host=192.168.1.20
@@ -12,14 +14,16 @@ server.peer.host=192.168.1.10
 server.peer.registry.port=1099
 # Required, identical on both nodes (>= 16 chars):  export NEXUS_REPLICATION_SECRET=...
 server.replication.secret=${NEXUS_REPLICATION_SECRET}
-# Optional (>= 12 chars). Without it the administrative API is disabled:  export NEXUS_ADMIN_TOKEN=...
+# One customer session per account across the whole cluster (default true)
+server.session.single=true
+# Optional (>= 12 chars). Without it NEXUS CONTROL cannot connect (admin API disabled):  export NEXUS_ADMIN_TOKEN=...
 server.admin.token=${NEXUS_ADMIN_TOKEN}
 
 # Must be stated explicitly. true = MySQL/MariaDB (durable); false = RAM-only demo (data lost on restart).
 database.enabled=true
 database.host=127.0.0.1
 database.port=3306
-database.name=nexus_chat
+database.name=nexus_banking_b
 database.username=${DB_USERNAME}
 database.password=${DB_PASSWORD}
 database.schema.auto=true

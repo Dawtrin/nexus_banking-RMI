@@ -2,13 +2,14 @@ package com.nexus.banking.control.core;
 
 import com.nexus.banking.contract.dto.ClientSessionDTO;
 import com.nexus.banking.contract.dto.DatabaseHealthDTO;
+import com.nexus.banking.contract.dto.LedgerSummaryDTO;
 import com.nexus.banking.contract.dto.OperationResult;
 import com.nexus.banking.contract.dto.ReplicationStatusDTO;
 import com.nexus.banking.contract.dto.ServerEventDTO;
 import com.nexus.banking.contract.dto.ServerStatusDTO;
 import com.nexus.banking.contract.dto.ThroughputPointDTO;
-import com.nexus.banking.contract.remote.AdminRemote;
-import com.nexus.banking.contract.remote.MonitoringRemote;
+import com.nexus.banking.contract.remote.BankingAdminService;
+import com.nexus.banking.contract.remote.BankingMonitoringService;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ public final class ClusterMonitor {
     }
 
     /** The two remote services of one node. */
-    public record NodeRemotes(MonitoringRemote monitoring, AdminRemote admin) {
+    public record NodeRemotes(BankingMonitoringService monitoring, BankingAdminService admin) {
     }
 
     @FunctionalInterface
@@ -48,7 +49,7 @@ public final class ClusterMonitor {
     public record NodeSnapshot(NodeEndpoint endpoint, Instant fetchedAt, String errorCode, String error, String warnings,
                                boolean stale, Instant lastGoodAt, ServerStatusDTO status, ReplicationStatusDTO replication,
                                DatabaseHealthDTO database, List<ClientSessionDTO> sessions, List<ServerEventDTO> events,
-                               List<ThroughputPointDTO> throughput) {
+                               List<ThroughputPointDTO> throughput, LedgerSummaryDTO ledger) {
         public boolean ok() {
             return error == null;
         }
@@ -107,7 +108,7 @@ public final class ClusterMonitor {
         Instant now = Instant.now();
         try {
             NodeRemotes remotes = connector.connect(n.host(), n.port());
-            MonitoringRemote mon = remotes.monitoring();
+            BankingMonitoringService mon = remotes.monitoring();
             OperationResult<ServerStatusDTO> st = mon.getServerStatus(token);
             if (!st.isSuccess()) return failure(n, now, st.getErrorCode(), st.getMessage());
             StringBuilder warn = new StringBuilder();
@@ -116,9 +117,10 @@ public final class ClusterMonitor {
             List<ClientSessionDTO> sessions = unwrap(mon.getActiveSessions(token), "sessions", warn);
             List<ServerEventDTO> events = unwrap(mon.getRecentEvents(token, 100), "events", warn);
             List<ThroughputPointDTO> throughput = unwrap(mon.getThroughput(token, 30), "throughput", warn);
+            LedgerSummaryDTO ledger = remotes.admin() == null ? null : unwrap(remotes.admin().getLedgerSummary(token), "ledger", warn);
             NodeSnapshot ok = new NodeSnapshot(n, now, null, null, warn.length() == 0 ? null : warn.toString(), false, now,
                     st.getData(), repl, db, sessions == null ? List.of() : sessions, events == null ? List.of() : events,
-                    throughput == null ? List.of() : throughput);
+                    throughput == null ? List.of() : throughput, ledger);
             synchronized (lastGood) {
                 lastGood.put(n.label(), ok);
             }
@@ -139,9 +141,9 @@ public final class ClusterMonitor {
         synchronized (lastGood) {
             prev = lastGood.get(n.label());
         }
-        if (prev == null) return new NodeSnapshot(n, now, code, message, null, false, null, null, null, null, List.of(), List.of(), List.of());
+        if (prev == null) return new NodeSnapshot(n, now, code, message, null, false, null, null, null, null, List.of(), List.of(), List.of(), null);
         return new NodeSnapshot(n, now, code, message, null, true, prev.lastGoodAt(), prev.status(), prev.replication(),
-                prev.database(), prev.sessions(), prev.events(), prev.throughput());
+                prev.database(), prev.sessions(), prev.events(), prev.throughput(), prev.ledger());
     }
 
     private static String describe(Throwable e) {

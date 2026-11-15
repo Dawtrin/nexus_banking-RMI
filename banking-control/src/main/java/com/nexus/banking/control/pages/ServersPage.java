@@ -30,15 +30,15 @@ public class ServersPage implements AdminPage {
         this.session = session;
         status.getStyleClass().add("text-muted");
         status.setWrapText(true);
-        Label note = Ui.muted("NEXUS CONTROL can ask a server to run replication now and to retry dead-lettered messages. "
-                + "It cannot start, stop or reconfigure a server: do that on the machine itself.");
+        Label note = Ui.muted("NEXUS CONTROL có thể yêu cầu chi nhánh đồng bộ ngay và thử lại các bút toán bị kẹt. "
+                + "Không thể khởi động, dừng hoặc cấu hình lại máy chủ: hãy làm trực tiếp trên máy đó.");
         VBox body = new VBox(14, note, status, panels);
         body.setPadding(new Insets(18, 28, 22, 28));
-        root.getChildren().addAll(Ui.header("Servers", "Configuration and operations of each server"), body);
+        root.getChildren().addAll(Ui.header("Máy chủ", "Cấu hình và thao tác của từng chi nhánh"), body);
     }
 
     @Override
-    public String title() { return "Servers"; }
+    public String title() { return "Máy chủ"; }
 
     @Override
     public Parent view() { return root; }
@@ -63,12 +63,12 @@ public class ServersPage implements AdminPage {
             GridPane cfg = new GridPane();
             cfg.setHgap(16);
             cfg.setVgap(6);
-            cfg.add(Ui.muted("Loading configuration..."), 0, 0);
+            cfg.add(Ui.muted("Đang tải cấu hình..."), 0, 0);
             long dead = snap == null || snap.replication() == null ? 0 : Math.max(0, snap.replication().getDeadLetterCount());
-            Button sync = new Button("Run replication now");
+            Button sync = new Button("Đồng bộ ngay");
             sync.getStyleClass().add("btn-secondary");
-            sync.setOnAction(e -> run(n, "Replication cycle", x -> x.admin().syncNow(session.token(), session.operator())));
-            Button requeue = new Button("Retry " + dead + " dead-lettered message" + (dead == 1 ? "" : "s"));
+            sync.setOnAction(e -> run(n, "Chu kỳ đồng bộ", x -> x.admin().syncNow(session.token(), session.operator())));
+            Button requeue = new Button("Thử lại " + dead + " bút toán bị kẹt" + "");
             requeue.getStyleClass().add("btn-secondary");
             requeue.setDisable(dead == 0);
             requeue.setOnAction(e -> runInt(n));
@@ -101,14 +101,14 @@ public class ServersPage implements AdminPage {
     private void run(NodeEndpoint n, String what, ClusterMonitorCall call) {
         session.background().execute(() -> {
             var r = session.monitor().onNode(n, x -> call.run(x));
-            Platform.runLater(() -> status.setText(n.label() + ": " + what + (r.isSuccess() ? " requested" : " failed - " + r.getMessage())));
+            Platform.runLater(() -> status.setText(n.label() + ": " + what + (r.isSuccess() ? " requested" : " lỗi - " + r.getMessage())));
         });
     }
 
     private void runInt(NodeEndpoint n) {
         session.background().execute(() -> {
             var r = session.monitor().onNode(n, x -> x.admin().requeueDeadLetters(session.token(), session.operator()));
-            Platform.runLater(() -> status.setText(n.label() + (r.isSuccess() ? ": " + r.getData() + " message(s) queued for another attempt" : ": retry failed - " + r.getMessage())));
+            Platform.runLater(() -> status.setText(n.label() + (r.isSuccess() ? ": " + r.getData() + " message(s) queued for another attempt" : ": thử lại lỗi - " + r.getMessage())));
         });
     }
 

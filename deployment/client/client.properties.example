@@ -1,17 +1,8 @@
-# =============================================================================
-# NEXUS Distributed Chat — Desktop Client Configuration Profile Example
-# =============================================================================
-
-# Server A Profile
-server.a.name=Server Node A
-server.a.host=192.168.1.101
-server.a.port=1099
-
-# Server B Profile
-server.b.name=Server Node B
-server.b.host=192.168.1.102
-server.b.port=1099
-
-# UI Defaults
-client.default.username=Student-VM1
-client.poll.interval.ms=1000
+# NEXUS BANKING customer client - connection notes (the app stores its last used addresses automatically).
+# On the login screen, open "Kết nối nâng cao" and enter:
+#   Chi nhánh A (Hà Nội)  : <IP of laptop running Node A>:1099
+#   Chi nhánh B (TP.HCM)  : <IP of laptop running Node B>:1099
+# Live balance push uses an RMI callback: the BRANCH connects back to the client, so the client laptop must accept
+# inbound TCP connections (allow Java through the firewall) and be on the same LAN. If it cannot, the app falls back to
+# polling every 2 seconds and shows "Polling" instead of "Realtime (RMI callback)".
+# JVM options (optional): -Dnexus.client.callback.host=<this laptop LAN IP>   -Dnexus.client.ssl=true

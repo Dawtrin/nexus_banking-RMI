@@ -26,13 +26,13 @@ public class SettingsPage implements AdminPage {
 
     public SettingsPage(AdminSession session, IntConsumer onInterval, Runnable onSignOut, Runnable onApplied) {
         this.session = session;
-        interval.getItems().addAll("2 seconds", "3 seconds", "5 seconds", "10 seconds");
-        Button save = new Button("Save changes");
+        interval.getItems().addAll("2 giây", "3 giây", "5 giây", "10 giây");
+        Button save = new Button("Lưu thay đổi");
         save.getStyleClass().add("btn-primary");
         save.setOnAction(e -> {
             String a = nodeA.getText().trim(), b = nodeB.getText().trim(), op = operator.getText().trim();
             if (op.isEmpty() || op.length() > 40 || AdminSession.parse("A", a).port() < 1 || AdminSession.parse("B", b).port() < 1) {
-                saved.setText("Check the operator name (1-40 characters) and both server addresses (host:port).");
+                saved.setText("Kiểm tra tên điều hành viên (1-40 ký tự) và địa chỉ hai chi nhánh (host:port).");
                 return;
             }
             AdminPreferences.save(a, b, op);
@@ -41,23 +41,23 @@ public class SettingsPage implements AdminPage {
             session.setOperator(op);
             session.updateNodes(a, b);
             onInterval.accept(secs);
-            saved.setText("Saved and applied.");
+            saved.setText("Đã lưu và áp dụng.");
             onApplied.run();
         });
-        Button out = new Button("Sign out");
+        Button out = new Button("Đăng xuất");
         out.getStyleClass().add("btn-secondary");
         out.setOnAction(e -> onSignOut.run());
         saved.getStyleClass().add("text-muted");
         VBox form = new VBox(14,
-                field("Operator name", operator, "Shown next to everything you do in the audit log."),
-                field("Node A address", nodeA, "host:port of its RMI registry"),
-                field("Node B address", nodeB, "host:port of its RMI registry"),
-                field("Refresh every", interval, null),
+                field("Tên điều hành viên", operator, "Được ghi cạnh mọi thao tác của bạn trong sổ kiểm toán."),
+                field("Địa chỉ chi nhánh A", nodeA, "host:port của RMI registry"),
+                field("Địa chỉ chi nhánh B", nodeB, "host:port của RMI registry"),
+                field("Làm mới mỗi", interval, null),
                 new HBox(12, save, out, saved),
-                Ui.muted("The admin token is never saved. Sign out clears it from memory."));
+                Ui.muted("Admin token không bao giờ được lưu. Đăng xuất sẽ xóa token khỏi bộ nhớ."));
         form.setMaxWidth(480);
         form.setPadding(new Insets(24, 28, 22, 28));
-        root.getChildren().addAll(Ui.header("Settings", "Stored on this computer only"), form);
+        root.getChildren().addAll(Ui.header("Cài đặt", "Chỉ lưu trên máy này"), form);
     }
 
     private static VBox field(String label, javafx.scene.Node n, String hint) {
@@ -69,7 +69,7 @@ public class SettingsPage implements AdminPage {
     }
 
     @Override
-    public String title() { return "Settings"; }
+    public String title() { return "Cài đặt"; }
 
     @Override
     public Parent view() { return root; }
@@ -79,7 +79,7 @@ public class SettingsPage implements AdminPage {
         operator.setText(session.operator());
         nodeA.setText(session.nodes().get(0).address());
         nodeB.setText(session.nodes().get(1).address());
-        interval.getSelectionModel().select(AdminPreferences.refreshSeconds() + " seconds");
+        interval.getSelectionModel().select(AdminPreferences.refreshSeconds() + " giây");
         if (interval.getValue() == null) interval.getSelectionModel().select(1);
         saved.setText("");
     }

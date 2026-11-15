@@ -12,7 +12,7 @@ import com.nexus.banking.contract.dto.ServerEventDTO;
 import com.nexus.banking.contract.dto.ServerStatusDTO;
 import com.nexus.banking.contract.dto.ThroughputPointDTO;
 import com.nexus.banking.contract.enums.ServerStatus;
-import com.nexus.banking.contract.remote.MonitoringRemote;
+import com.nexus.banking.contract.remote.BankingMonitoringService;
 import org.junit.jupiter.api.Test;
 
 import java.rmi.RemoteException;
@@ -33,7 +33,7 @@ class ClusterMonitorTest {
                 ServerStatus.ONLINE, ServerStatus.ONLINE, 5, Instant.now(), 2, 0, null, "MYSQL_DURABLE");
     }
 
-    private static MonitoringRemote healthy(String id) {
+    private static BankingMonitoringService healthy(String id) {
         return new Stub() {
             @Override
             public OperationResult<ServerStatusDTO> getServerStatus(String t) {
@@ -42,7 +42,7 @@ class ClusterMonitorTest {
         };
     }
 
-    private abstract static class Stub implements MonitoringRemote {
+    private abstract static class Stub implements BankingMonitoringService {
         @Override
         public OperationResult<List<ClientSessionDTO>> getActiveSessions(String t) {
             return OperationResult.success(List.of());
@@ -69,7 +69,7 @@ class ClusterMonitorTest {
         }
     }
 
-    private static ClusterMonitor.NodeRemotes remotes(MonitoringRemote m) {
+    private static ClusterMonitor.NodeRemotes remotes(BankingMonitoringService m) {
         return new ClusterMonitor.NodeRemotes(m, null);
     }
 

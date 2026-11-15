@@ -50,7 +50,7 @@ public class LoginController {
         badge.setMaxSize(52, 52);
         Label title = new Label("NEXUS // CONTROL");
         title.getStyleClass().add("title-xl");
-        Label sub = new Label("Opera GX Cluster Telemetry & Active Server Mesh Administration.");
+        Label sub = new Label("Trung tâm Điều hành & Giám sát Ngân hàng phân tán: sức khỏe cụm, phiên giao dịch, sổ cái và kiểm toán.");
         sub.getStyleClass().add("text-muted");
         sub.setWrapText(true);
         VBox brand = new VBox(10, badge, title, sub);
@@ -70,9 +70,9 @@ public class LoginController {
     private void updateSecurityNotice(boolean ssl) {
         if (securityNoticeLabel != null) {
             if (ssl) {
-                securityNoticeLabel.setText("Admin credentials and metrics encrypted with TLS/SSL.");
+                securityNoticeLabel.setText("Thông tin quản trị và số liệu được mã hóa bằng TLS/SSL.");
             } else {
-                securityNoticeLabel.setText("The token is kept in memory only. Traffic is plain TCP: use a trusted network.");
+                securityNoticeLabel.setText("Token chỉ giữ trong bộ nhớ. Đường truyền KHÔNG mã hóa: chỉ dùng trong mạng tin cậy.");
             }
         }
     }
@@ -90,15 +90,15 @@ public class LoginController {
         String op = operatorField.getText() == null ? "" : operatorField.getText().trim();
         String token = tokenField.getText() == null ? "" : tokenField.getText();
         if (op.isEmpty() || op.length() > 40) {
-            error("Enter an operator name of up to 40 characters. It is written next to every action in the audit log.");
+            error("Nhập tên điều hành viên (tối đa 40 ký tự). Tên này được ghi cạnh mọi thao tác trong sổ kiểm toán.");
             return;
         }
         if (token.isBlank()) {
-            error("Enter the admin token configured on the servers.");
+            error("Nhập admin token đã cấu hình trên máy chủ.");
             return;
         }
         if (AdminSession.parse("A", nodeAField.getText()).port() < 1 || AdminSession.parse("B", nodeBField.getText()).port() < 1) {
-            error("Server addresses must look like host:port, for example 192.168.1.10:1099.");
+            error("Địa chỉ máy chủ phải có dạng host:port, ví dụ 192.168.1.10:1099.");
             return;
         }
 
@@ -107,7 +107,7 @@ public class LoginController {
 
         session.configure(nodeAField.getText(), nodeBField.getText(), op, token);
         connectButton.setDisable(true);
-        statusLabel.setText("Asking both servers" + (useSsl ? " (TLS/SSL)..." : "..."));
+        statusLabel.setText("Đang hỏi hai chi nhánh" + (useSsl ? " (TLS/SSL)..." : "..."));
         var started = session.monitor().refresh(session.nodes(), token);
         if (started.isEmpty()) {
             connectButton.setDisable(false);
@@ -117,12 +117,12 @@ public class LoginController {
             connectButton.setDisable(false);
             statusLabel.setText("");
             if (err != null || snaps == null) {
-                error("Could not query the servers: " + (err == null ? "no answer" : err.getMessage()));
+                error("Không truy vấn được máy chủ: " + (err == null ? "không phản hồi" : err.getMessage()));
                 return;
             }
             List<NodeSnapshot> ok = snaps.stream().filter(NodeSnapshot::ok).toList();
             if (ok.isEmpty()) {
-                StringBuilder sb = new StringBuilder("No server accepted the connection:\n");
+                StringBuilder sb = new StringBuilder("Không máy chủ nào chấp nhận kết nối:\n");
                 snaps.forEach(s -> sb.append(s.endpoint().label()).append(" (").append(s.endpoint().address()).append("): ")
                         .append(s.errorCode()).append(" - ").append(s.error()).append("\n"));
                 error(sb.toString().trim());
