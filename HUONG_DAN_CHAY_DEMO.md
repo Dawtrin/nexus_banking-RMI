@@ -151,15 +151,20 @@ Mở thêm 1 tab PowerShell mới:
 
 ---
 
-#### 💻 TẠI LAPTOP 2:
-1. **Trên Máy thật 2: Khởi động Server Chi nhánh TP.HCM (Node B):**
+#### 💻 TẠI LAPTOP 2 (Bạn của bạn):
+1. **Build code lần đầu sau khi clone (chỉ làm 1 lần duy nhất):**
    ```powershell
    cd C:\Users\Lenovo\IdeaProjects\nexus_banking-RMI
+   mvn install -DskipTests
+   ```
+
+2. **Trên Máy thật 2: Khởi động Server Chi nhánh TP.HCM (Node B):**
+   ```powershell
    .\scripts\run-node-b.ps1 -Db -AdvertisedHost 192.168.43.20 -PeerHost 192.168.43.10
    ```
-   *(Server B sẽ tự động bắt tay với Server A qua mạng Wi-Fi).*
+   *(Thay đúng IP: AdvertisedHost là IP của Laptop 2, PeerHost là IP của Laptop 1).*
 
-2. **Trong Máy ảo VirtualBox 2: Mở Client Khách hàng:**
+3. **Trong Máy ảo VirtualBox 2: Mở Client Khách hàng:**
    ```powershell
    .\scripts\run-client.ps1
    ```
