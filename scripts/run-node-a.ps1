@@ -1,12 +1,9 @@
 # Start NEXUS BANKING branch Node A - Ha Noi (registry 1099)
-[CmdletBinding()]
 param(
     [switch]$Ssl,
     [switch]$Db,
     [string]$AdvertisedHost,
-    [string]$PeerHost,
-    [Parameter(ValueFromRemainingArguments = $true)]
-    [string[]]$RemainingArgs
+    [string]$PeerHost
 )
 
 $ErrorActionPreference = 'Stop'
@@ -73,4 +70,4 @@ Write-Host "=========================================" -ForegroundColor Cyan
     --server.peer.service.port=2100 `
     @sslArgs `
     @hostArgs `
-    @RemainingArgs
+    @args

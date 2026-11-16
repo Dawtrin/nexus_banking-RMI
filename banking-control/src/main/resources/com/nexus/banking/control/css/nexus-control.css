@@ -1,20 +1,20 @@
-/* NEXUS CONTROL // GX TELEMETRY specific styles */
+/* NEXUS CONTROL // DARK FINTECH TELEMETRY STYLES */
 .login-hero {
-    -fx-background-color: linear-gradient(to bottom right, #180B10, #0B0B0D);
+    -fx-background-color: linear-gradient(to bottom right, #0F172A, #0A0F1E);
 }
 .login-form {
-    -fx-background-color: -ink;
+    -fx-background-color: #0D1426;
 }
 .brand-mark {
-    -fx-background-color: linear-gradient(to bottom right, #FA174A, #9E002B);
-    -fx-background-radius: 6;
-    -fx-border-color: rgba(255, 255, 255, 0.2);
+    -fx-background-color: linear-gradient(to bottom right, #22D3EE, #6366F1);
+    -fx-background-radius: 12;
+    -fx-border-color: rgba(255, 255, 255, 0.25);
     -fx-border-width: 1;
-    -fx-border-radius: 6;
-    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.5), 10, 0, 0, 2);
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(34, 211, 238, 0.45), 14, 0.2, 0, 3);
 }
 .brand-mark-text {
-    -fx-text-fill: white;
+    -fx-text-fill: #06101F;
     -fx-font-weight: 900;
 }
 .page-pad {
@@ -30,15 +30,17 @@
     -fx-text-fill: -text;
 }
 .dialog-pane {
-    -fx-background-color: -panel;
+    -fx-background-color: #121A2E;
     -fx-border-color: -line;
     -fx-border-width: 1;
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
 }
 .dialog-pane .label {
     -fx-text-fill: -text;
 }
 .dialog-pane > .button-bar > .container {
-    -fx-background-color: -panel;
+    -fx-background-color: #121A2E;
 }
 .alert .content.label {
     -fx-text-fill: -text;

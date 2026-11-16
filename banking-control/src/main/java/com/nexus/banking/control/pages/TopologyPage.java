@@ -65,10 +65,10 @@ public class TopologyPage implements AdminPage {
     }
 
     private static Color nodeColor(NodeSnapshot s) {
-        if (s == null || s.status() == null) return Color.web("#71717A");
-        if (!s.ok()) return Color.web("#FA174A");
+        if (s == null || s.status() == null) return Color.web("#5F6C8C");
+        if (!s.ok()) return Color.web("#FB7185");
         ServerStatus st = s.status().getServerStatus();
-        return st == ServerStatus.ONLINE ? Color.web("#22C55E") : st == ServerStatus.DEGRADED ? Color.web("#F59E0B") : Color.web("#FA174A");
+        return st == ServerStatus.ONLINE ? Color.web("#34D399") : st == ServerStatus.DEGRADED ? Color.web("#FBBF24") : Color.web("#FB7185");
     }
 
     private void draw() {
@@ -90,22 +90,22 @@ public class TopologyPage implements AdminPage {
 
     private void node(GraphicsContext g, NodeSnapshot s, String label, double x, double y, double w, double h) {
         Color c = nodeColor(s);
-        g.setFill(Color.web("#1C1C24"));
-        g.fillRoundRect(x, y, w, h, 8, 8);
+        g.setFill(Color.web("#121A2E"));
+        g.fillRoundRect(x, y, w, h, 16, 16);
         g.setStroke(c);
         g.setLineWidth(2);
-        g.strokeRoundRect(x, y, w, h, 8, 8);
-        g.setFill(Color.web("#F4F4F6"));
+        g.strokeRoundRect(x, y, w, h, 16, 16);
+        g.setFill(Color.web("#E8ECF8"));
         g.setFont(Font.font("System", FontWeight.BOLD, 16));
         g.fillText(label, x + 16, y + 28);
         g.setFont(Font.font("System", 12));
-        g.setFill(Color.web("#A1A1AA"));
+        g.setFill(Color.web("#93A0C0"));
         g.fillText(s == null ? "" : s.endpoint().address(), x + 16, y + 48);
         g.setFill(c);
         String state = s == null || s.status() == null ? "Chưa có dữ liệu" : !s.ok() ? "Không khả dụng" : s.status().getServerStatus().name().charAt(0) + s.status().getServerStatus().name().substring(1).toLowerCase();
         g.setFont(Font.font("System", FontWeight.BOLD, 13));
         g.fillText(state + (s != null && s.stale() ? " (số liệu cũ)" : ""), x + 16, y + 74);
-        g.setFill(Color.web("#A1A1AA"));
+        g.setFill(Color.web("#93A0C0"));
         g.setFont(Font.font("System", 12));
         if (s != null && s.status() != null) {
             g.fillText("Lưu trữ: " + s.status().getPersistenceMode(), x + 16, y + 98);
@@ -121,21 +121,21 @@ public class TopologyPage implements AdminPage {
         String text;
         boolean dashed = false;
         if (sender == null || !sender.ok() || r == null) {
-            c = Color.web("#71717A");
+            c = Color.web("#5F6C8C");
             text = "chưa rõ";
             dashed = true;
         } else if (r.getPeerStatus() != ServerStatus.ONLINE) {
-            c = Color.web("#FA174A");
+            c = Color.web("#FB7185");
             text = "mất liên kết (" + r.getPeerStatus().name().toLowerCase() + ")";
             dashed = true;
         } else if (r.getDeadLetterCount() > 0) {
-            c = Color.web("#FA174A");
+            c = Color.web("#FB7185");
             text = r.getDeadLetterCount() + " bị kẹt";
         } else if (r.getPendingCount() > 0) {
-            c = Color.web("#F59E0B");
+            c = Color.web("#FBBF24");
             text = r.getPendingCount() + " đang chờ";
         } else {
-            c = Color.web("#22C55E");
+            c = Color.web("#34D399");
             text = "đã đồng bộ";
         }
         g.setStroke(c);
@@ -148,7 +148,7 @@ public class TopologyPage implements AdminPage {
         g.setFill(c);
         g.fillPolygon(new double[]{xe, xe + 12 * d, xe + 12 * d}, new double[]{y, y - 6, y + 6}, 3);
         g.setFont(Font.font("System", 12));
-        g.setFill(Color.web("#F4F4F6"));
+        g.setFill(Color.web("#E8ECF8"));
         String label = (leftToRight ? "A to B: " : "B to A: ") + text;
         g.fillText(label, (x1 + x2) / 2 - label.length() * 3.0, y - 10);
     }

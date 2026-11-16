@@ -1,50 +1,56 @@
 /* ==========================================================================
-   NEXUS GX DESIGN SYSTEM — OPERA GX / OPERA BROWSER DNA
-   Void Black / Panel Graphite / GX Neon Red Accent / Cyber Telemetry
+   NEXUS BANKING // CONTROL DESIGN SYSTEM
+   Dark Fintech Neo-Banking Palette & Rounded Geometry (Synchronized with Client)
    ========================================================================== */
 
 .root {
-    /* --- Core Palette Tokens --- */
-    -ink: #0B0B0D;              /* Void Black: pure deep space background */
-    -panel: #131317;            /* Panel Graphite: sleek dark sidebar / toolbar */
-    -raised: #1C1C24;           /* Elevated Surface: modular cards, dialogs, inputs */
-    -raised-hover: #262632;     /* Elevated Hover surface */
-    -line: #2D2D38;             /* Crisp 1px border graphite */
-    -line-bright: #3D3D4E;      /* Active / highlighted border */
-    -text: #F4F4F6;             /* Ice White text: ultra-sharp high contrast */
-    -muted: #A1A1AA;            /* Muted Zinc: secondary labels, hints */
-    -faint: #71717A;            /* Tech Subtle: timestamps, metadata */
+    /* --- Core Palette Tokens (Synchronized with NEXUS BANKING Client) --- */
+    -ink: #0A0F1E;              /* Deep space navy background */
+    -panel: #0D1426;            /* Sleek dark sidebar / toolbar */
+    -raised: #121A2E;           /* Elevated surface / modular cards */
+    -raised-hover: #182340;     /* Elevated hover surface */
+    -surface: #121A2E;          /* Surface container */
+    -surface-2: #182340;        /* Secondary surface */
+    -line: #24304F;             /* Clean border line */
+    -line-bright: #3B4B75;      /* Active / highlighted border */
+    -text: #E8ECF8;             /* Bright clear text */
+    -muted: #93A0C0;            /* Secondary muted labels / hints */
+    -faint: #5F6C8C;            /* Subtle timestamps / metadata */
 
-    /* --- Opera GX Neon Red Accents --- */
-    -gx-red: #FA174A;           /* Iconic Opera GX Neon Red */
-    -gx-red-hover: #FF2E63;     /* Brighter glowing red on hover */
-    -gx-red-dim: #B3123A;       /* Dark crimson backing */
-    -gx-red-glow: rgba(250, 23, 74, 0.35); /* Focus / shadow glow */
-    -accent: #FA174A;
-
-    /* --- Cyber & Telemetry Accents --- */
-    -cyan: #00F0FF;             /* Cyber Cyan: network telemetry, ping, RMI link */
-    -ok: #22C55E;               /* Matrix Green: online, synchronized, success */
-    -warn: #F59E0B;             /* Warning Amber: degraded, reconnecting */
-    -danger: #EF4444;           /* Error Crimson: offline, dead-lettered */
+    /* --- Accent & Brand Colors --- */
+    -accent: #22D3EE;           /* Electric Cyan */
+    -accent-2: #6366F1;         /* Digital Indigo */
+    -accent-hover: #38BDF8;     /* Sky blue hover */
+    -accent-dim: #0E7490;       /* Darker cyan backing */
+    -accent-glow: rgba(34, 211, 238, 0.35); /* Focus / shadow glow */
 
     /* Compatibility aliases */
-    -blue: #00F0FF;
-    -violet: #FA174A;
-    -violet-soft: #FF2E63;
+    -gx-red: #22D3EE;
+    -gx-red-hover: #38BDF8;
+    -gx-red-dim: #0E7490;
+    -gx-red-glow: rgba(34, 211, 238, 0.35);
+    -cyan: #22D3EE;
+    -blue: #38BDF8;
+    -violet: #6366F1;
+    -violet-soft: #818CF8;
+
+    /* --- Status Semantics --- */
+    -ok: #34D399;               /* Emerald Green: online, synchronized, success */
+    -warn: #FBBF24;             /* Amber Warning: degraded, reconnecting */
+    -danger: #FB7185;           /* Rose Red: offline, dead-letter, critical */
 
     /* --- Typography & Base Defaults --- */
     -fx-font-family: "Segoe UI", "Inter", "Roboto", "Helvetica Neue", "Arial", sans-serif;
     -fx-font-size: 13px;
-    -fx-base: #1C1C24;
-    -fx-background: #0B0B0D;
-    -fx-control-inner-background: #1C1C24;
-    -fx-accent: #FA174A;
-    -fx-focus-color: #FA174A;
+    -fx-base: #121A2E;
+    -fx-background: #0A0F1E;
+    -fx-control-inner-background: #121A2E;
+    -fx-accent: #22D3EE;
+    -fx-focus-color: #22D3EE;
     -fx-faint-focus-color: transparent;
     -fx-text-fill: -text;
-    -fx-highlight-fill: #FA174A;
-    -fx-highlight-text-fill: #FFFFFF;
+    -fx-highlight-fill: #22D3EE;
+    -fx-highlight-text-fill: #04101F;
 }
 
 .root.font-small { -fx-font-size: 12px; }
@@ -97,7 +103,7 @@
     -fx-font-family: "Cascadia Mono", "Consolas", "JetBrains Mono", "DejaVu Sans Mono", monospace;
     -fx-font-size: 0.92em;
 }
-.text-accent, .text-violet { -fx-text-fill: -gx-red; }
+.text-accent, .text-violet { -fx-text-fill: -accent; }
 .text-cyan { -fx-text-fill: -cyan; }
 .form-label {
     -fx-text-fill: -muted;
@@ -106,35 +112,35 @@
     -fx-letter-spacing: 0.5px;
 }
 
-/* Opera GX Style Brand Badge */
+/* Brand Badge */
 .brand-mark {
-    -fx-background-color: linear-gradient(to bottom right, #FA174A, #9E002B);
-    -fx-background-radius: 6;
-    -fx-border-color: rgba(255, 255, 255, 0.2);
+    -fx-background-color: linear-gradient(to bottom right, #22D3EE, #6366F1);
+    -fx-background-radius: 12;
+    -fx-border-color: rgba(255, 255, 255, 0.25);
     -fx-border-width: 1;
-    -fx-border-radius: 6;
-    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.5), 10, 0, 0, 2);
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(34, 211, 238, 0.45), 14, 0.2, 0, 3);
 }
 .brand-mark-text {
-    -fx-text-fill: #FFFFFF;
+    -fx-text-fill: #06101F;
     -fx-font-weight: 900;
     -fx-font-family: "Segoe UI", "Inter", sans-serif;
 }
 
 /* Controls: Text Fields, Passwords, Combo Boxes, Text Areas */
 .text-field, .password-field, .combo-box-base, .text-area {
-    -fx-background-color: #16161C;
+    -fx-background-color: #0E1630;
     -fx-border-color: -line;
     -fx-border-width: 1;
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
     -fx-text-fill: -text;
     -fx-prompt-text-fill: -faint;
-    -fx-padding: 8 12;
+    -fx-padding: 10 14;
 }
 .text-field:focused, .password-field:focused, .text-area:focused, .combo-box-base:focused {
-    -fx-border-color: -gx-red;
-    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.4), 6, 0, 0, 0);
+    -fx-border-color: -accent;
+    -fx-effect: dropshadow(gaussian, rgba(34, 211, 238, 0.35), 8, 0.15, 0, 0);
 }
 .text-field:disabled, .combo-box-base:disabled { -fx-opacity: 0.5; }
 .combo-box .list-cell {
@@ -145,207 +151,216 @@
 .combo-box-popup .list-view {
     -fx-background-color: -raised;
     -fx-border-color: -line;
-    -fx-background-radius: 6;
-    -fx-border-radius: 6;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 16, 0, 0, 8);
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 18, 0, 0, 8);
 }
 .combo-box-popup .list-cell {
     -fx-background-color: transparent;
     -fx-text-fill: -text;
-    -fx-padding: 8 12;
+    -fx-padding: 8 14;
 }
 .combo-box-popup .list-cell:filled:hover, .combo-box-popup .list-cell:filled:selected {
-    -fx-background-color: #262632;
+    -fx-background-color: #182340;
     -fx-text-fill: #FFFFFF;
 }
 .text-area {
-    -fx-control-inner-background: #16161C;
-    -fx-padding: 4;
+    -fx-control-inner-background: #0E1630;
+    -fx-padding: 6;
 }
 .text-area .content { -fx-background-color: transparent; }
 .text-area .scroll-pane, .text-area .scroll-pane .viewport { -fx-background-color: transparent; }
 
 .check-box { -fx-text-fill: -muted; -fx-cursor: hand; }
 .check-box .box {
-    -fx-background-color: #16161C;
+    -fx-background-color: #0E1630;
     -fx-border-color: -line;
-    -fx-border-radius: 4;
-    -fx-background-radius: 4;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
 }
 .check-box:selected .box {
-    -fx-background-color: -gx-red;
-    -fx-border-color: -gx-red;
-    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.4), 4, 0, 0, 0);
+    -fx-background-color: -accent;
+    -fx-border-color: -accent;
+    -fx-effect: dropshadow(gaussian, rgba(34, 211, 238, 0.4), 6, 0, 0, 0);
 }
 .check-box:selected .mark {
-    -fx-background-color: white;
+    -fx-background-color: #06101F;
 }
 
-/* Opera GX Action Buttons */
+/* Action Buttons */
 .btn-primary, .btn-secondary, .btn-ghost, .btn-danger, .btn-icon, .btn-send {
     -fx-cursor: hand;
     -fx-font-weight: 700;
-    -fx-background-radius: 6;
-    -fx-border-radius: 6;
-    -fx-padding: 9 18;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-padding: 11 20;
 }
 .btn-primary {
-    -fx-background-color: linear-gradient(to right, #FA174A, #FF2E63);
-    -fx-text-fill: white;
-    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.35), 8, 0, 0, 2);
+    -fx-background-color: linear-gradient(to right, #22D3EE, #6366F1);
+    -fx-text-fill: #04101F;
+    -fx-font-weight: 800;
+    -fx-effect: dropshadow(gaussian, rgba(34, 211, 238, 0.4), 12, 0.15, 0, 2);
 }
 .btn-primary:hover {
-    -fx-background-color: linear-gradient(to right, #FF2E63, #FF477E);
-    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.6), 12, 0, 0, 3);
+    -fx-background-color: linear-gradient(to right, #38BDF8, #818CF8);
+    -fx-effect: dropshadow(gaussian, rgba(34, 211, 238, 0.6), 18, 0.25, 0, 3);
 }
 .btn-primary:pressed {
-    -fx-background-color: #D6123D;
+    -fx-background-color: #0891B2;
 }
 .btn-primary:disabled { -fx-opacity: 0.45; }
 
 .btn-secondary {
-    -fx-background-color: -raised;
+    -fx-background-color: #182340;
     -fx-border-color: -line;
     -fx-border-width: 1;
     -fx-text-fill: -text;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
 }
 .btn-secondary:hover {
-    -fx-background-color: -raised-hover;
-    -fx-border-color: -gx-red;
+    -fx-background-color: #1F2C50;
+    -fx-border-color: -accent;
     -fx-text-fill: #FFFFFF;
 }
 .btn-ghost {
     -fx-background-color: transparent;
     -fx-text-fill: -muted;
-    -fx-padding: 6 10;
+    -fx-padding: 8 12;
+    -fx-background-radius: 10;
 }
 .btn-ghost:hover {
-    -fx-background-color: -raised;
-    -fx-text-fill: -gx-red;
+    -fx-background-color: #151F3A;
+    -fx-text-fill: -accent;
 }
 .btn-danger {
-    -fx-background-color: transparent;
-    -fx-border-color: rgba(239, 68, 68, 0.5);
+    -fx-background-color: rgba(251, 113, 133, 0.12);
+    -fx-border-color: rgba(251, 113, 133, 0.5);
+    -fx-border-width: 1;
     -fx-text-fill: -danger;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
 }
 .btn-danger:hover {
-    -fx-background-color: rgba(239, 68, 68, 0.15);
+    -fx-background-color: rgba(251, 113, 133, 0.25);
     -fx-border-color: -danger;
 }
 .btn-secondary:disabled, .btn-danger:disabled, .btn-ghost:disabled { -fx-opacity: 0.45; }
 .btn-icon {
     -fx-background-color: transparent;
     -fx-text-fill: -muted;
-    -fx-padding: 7 11;
+    -fx-padding: 8 12;
+    -fx-background-radius: 10;
 }
 .btn-icon:hover, .toggle-button.btn-icon:selected {
-    -fx-background-color: -raised;
+    -fx-background-color: #182340;
     -fx-text-fill: -text;
 }
 .btn-send {
-    -fx-background-color: linear-gradient(to bottom right, #FA174A, #D6123D);
-    -fx-text-fill: white;
-    -fx-background-radius: 6;
+    -fx-background-color: linear-gradient(to right, #22D3EE, #6366F1);
+    -fx-text-fill: #04101F;
+    -fx-background-radius: 12;
     -fx-min-width: 44;
     -fx-min-height: 44;
     -fx-padding: 0;
     -fx-font-size: 1.2em;
-    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.45), 8, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(34, 211, 238, 0.4), 10, 0, 0, 2);
 }
 .btn-send:hover {
-    -fx-background-color: linear-gradient(to bottom right, #FF2E63, #FA174A);
-    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.7), 12, 0, 0, 3);
+    -fx-background-color: linear-gradient(to right, #38BDF8, #818CF8);
+    -fx-effect: dropshadow(gaussian, rgba(34, 211, 238, 0.65), 14, 0, 0, 3);
 }
 .btn-send:disabled { -fx-opacity: 0.4; }
 .button:focused, .toggle-button:focused {
-    -fx-border-color: -gx-red;
+    -fx-border-color: -accent;
     -fx-border-width: 1;
 }
 
-/* Opera Sidebar Rail Navigation */
+/* Sidebar Rail Navigation */
 .nav-item {
     -fx-background-color: transparent;
     -fx-text-fill: -muted;
     -fx-alignment: CENTER_LEFT;
-    -fx-padding: 10 14;
-    -fx-background-radius: 4;
+    -fx-padding: 11 16;
+    -fx-background-radius: 10;
     -fx-cursor: hand;
     -fx-font-weight: 600;
+    -fx-font-size: 13.5px;
     -fx-border-width: 0;
 }
 .nav-item:hover {
-    -fx-background-color: -raised;
+    -fx-background-color: #151F3A;
     -fx-text-fill: -text;
 }
 .nav-item:selected {
-    -fx-background-color: rgba(250, 23, 74, 0.12);
-    -fx-text-fill: #FFFFFF;
-    -fx-border-color: transparent transparent transparent -gx-red;
+    -fx-background-color: linear-gradient(to right, rgba(34, 211, 238, 0.18), rgba(99, 102, 241, 0.10));
+    -fx-text-fill: -accent;
+    -fx-border-color: transparent transparent transparent -accent;
     -fx-border-width: 0 0 0 3;
-    -fx-border-radius: 0 4 4 0;
+    -fx-border-radius: 0 10 10 0;
     -fx-font-weight: 700;
 }
 
 /* Chips & Presence Status Pills */
 .chip {
-    -fx-background-radius: 4;
-    -fx-padding: 2 10;
+    -fx-background-radius: 20;
+    -fx-padding: 4 12;
     -fx-font-size: 0.9em;
     -fx-font-weight: 700;
     -fx-font-family: "Cascadia Mono", "Consolas", monospace;
 }
 .chip-ok {
-    -fx-background-color: rgba(34, 197, 94, 0.15);
+    -fx-background-color: rgba(52, 211, 153, 0.15);
     -fx-text-fill: -ok;
-    -fx-border-color: rgba(34, 197, 94, 0.35);
+    -fx-border-color: rgba(52, 211, 153, 0.4);
     -fx-border-width: 1;
-    -fx-border-radius: 4;
+    -fx-border-radius: 20;
 }
 .chip-warn {
-    -fx-background-color: rgba(245, 158, 11, 0.15);
+    -fx-background-color: rgba(251, 191, 36, 0.15);
     -fx-text-fill: -warn;
-    -fx-border-color: rgba(245, 158, 11, 0.35);
+    -fx-border-color: rgba(251, 191, 36, 0.4);
     -fx-border-width: 1;
-    -fx-border-radius: 4;
+    -fx-border-radius: 20;
 }
 .chip-danger {
-    -fx-background-color: rgba(239, 68, 68, 0.15);
+    -fx-background-color: rgba(251, 113, 133, 0.15);
     -fx-text-fill: -danger;
-    -fx-border-color: rgba(239, 68, 68, 0.35);
+    -fx-border-color: rgba(251, 113, 133, 0.4);
     -fx-border-width: 1;
-    -fx-border-radius: 4;
+    -fx-border-radius: 20;
 }
 .chip-neutral {
-    -fx-background-color: rgba(161, 161, 170, 0.12);
+    -fx-background-color: #182340;
     -fx-text-fill: -muted;
-    -fx-border-color: rgba(161, 161, 170, 0.25);
+    -fx-border-color: -line;
     -fx-border-width: 1;
-    -fx-border-radius: 4;
+    -fx-border-radius: 20;
 }
 .chip-count {
-    -fx-background-color: -gx-red;
-    -fx-text-fill: white;
-    -fx-background-radius: 4;
-    -fx-padding: 0 7;
+    -fx-background-color: -accent;
+    -fx-text-fill: #04101F;
+    -fx-background-radius: 12;
+    -fx-padding: 1 8;
     -fx-font-size: 0.85em;
-    -fx-font-weight: 700;
+    -fx-font-weight: 800;
 }
 
 /* Banners and Empty States */
 .banner-error {
-    -fx-background-color: rgba(239, 68, 68, 0.12);
-    -fx-border-color: rgba(239, 68, 68, 0.5);
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
-    -fx-padding: 10 12;
+    -fx-background-color: rgba(251, 113, 133, 0.12);
+    -fx-border-color: rgba(251, 113, 133, 0.5);
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 12 16;
 }
 .banner-error .label { -fx-text-fill: -danger; }
 .banner-warn {
-    -fx-background-color: rgba(245, 158, 11, 0.12);
-    -fx-border-color: rgba(245, 158, 11, 0.5);
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
-    -fx-padding: 10 12;
+    -fx-background-color: rgba(251, 191, 36, 0.12);
+    -fx-border-color: rgba(251, 191, 36, 0.5);
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 12 16;
 }
 .banner-warn .label { -fx-text-fill: -warn; }
 .empty-title {
@@ -368,21 +383,21 @@
 }
 .list-view .list-cell:empty { -fx-background-color: transparent; }
 .list-view .list-cell:filled:hover {
-    -fx-background-color: rgba(38, 38, 50, 0.6);
+    -fx-background-color: #182340;
 }
 .list-view .list-cell:filled:selected {
-    -fx-background-color: rgba(250, 23, 74, 0.15);
-    -fx-border-color: transparent transparent transparent -gx-red;
-    -fx-border-width: 0 0 0 2;
+    -fx-background-color: rgba(34, 211, 238, 0.14);
+    -fx-border-color: transparent transparent transparent -accent;
+    -fx-border-width: 0 0 0 3;
 }
 .scroll-pane, .scroll-pane > .viewport { -fx-background-color: transparent; }
 .scroll-bar { -fx-background-color: transparent; }
 .scroll-bar .thumb {
-    -fx-background-color: #2D2D38;
-    -fx-background-radius: 4;
+    -fx-background-color: #24304F;
+    -fx-background-radius: 6;
 }
 .scroll-bar .thumb:hover {
-    -fx-background-color: -gx-red;
+    -fx-background-color: -accent;
 }
 .scroll-bar .increment-button, .scroll-bar .decrement-button {
     -fx-padding: 0; -fx-pref-height: 0; -fx-pref-width: 0;
@@ -390,113 +405,79 @@
 .scroll-bar:vertical { -fx-pref-width: 8; }
 .scroll-bar:horizontal { -fx-pref-height: 8; }
 
-/* Opera GX Messenger Stream (Chat Bubbles) */
-.msg-name {
-    -fx-font-weight: 700;
-    -fx-text-fill: #FFFFFF;
-}
-.msg-meta {
-    -fx-text-fill: -faint;
-    -fx-font-size: 0.88em;
-    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
-}
-.msg-text { -fx-text-fill: -text; }
-.msg-bubble {
-    -fx-background-color: #1C1C24;
-    -fx-border-color: #2A2A34;
-    -fx-border-width: 1;
-    -fx-background-radius: 2 6 6 6;
-    -fx-border-radius: 2 6 6 6;
-    -fx-padding: 9 13;
-}
-.msg-bubble-own {
-    -fx-background-color: #24161C;
-    -fx-border-color: rgba(250, 23, 74, 0.55);
-    -fx-border-width: 1;
-    -fx-background-radius: 6 2 6 6;
-    -fx-border-radius: 6 2 6 6;
-    -fx-padding: 9 13;
-    -fx-effect: dropshadow(gaussian, rgba(250, 23, 74, 0.15), 6, 0, 0, 1);
-}
-.via-tag {
-    -fx-text-fill: -faint;
-    -fx-font-size: 0.85em;
-    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
-    -fx-border-color: -line;
-    -fx-border-radius: 4;
-    -fx-padding: 0 6;
-}
-
-/* GX Control Hardware / Cluster Telemetry (NEXUS CONTROL) */
+/* Control Hardware / Cluster Telemetry */
 .table-view {
-    -fx-background-color: transparent;
-    -fx-control-inner-background: transparent;
-    -fx-table-cell-border-color: transparent;
+    -fx-background-color: -raised;
+    -fx-background-radius: 16;
     -fx-border-color: -line;
-    -fx-border-radius: 6;
+    -fx-border-radius: 16;
+    -fx-padding: 0;
 }
-.table-view .column-header-background { -fx-background-color: -panel; }
+.table-view .column-header-background {
+    -fx-background-color: #0F1830;
+    -fx-background-radius: 16 16 0 0;
+}
 .table-view .column-header, .table-view .filler {
-    -fx-background-color: -panel;
-    -fx-border-color: transparent transparent -line transparent;
-    -fx-size: 36;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-size: 40;
 }
 .table-view .column-header .label {
-    -fx-text-fill: -muted;
+    -fx-text-fill: -faint;
     -fx-font-weight: 700;
-    -fx-font-size: 0.88em;
+    -fx-font-size: 12px;
     -fx-letter-spacing: 0.5px;
+    -fx-alignment: CENTER_LEFT;
 }
 .table-row-cell {
-    -fx-cell-size: 38px;
+    -fx-cell-size: 42px;
     -fx-background-color: transparent;
-    -fx-border-color: transparent transparent rgba(45, 45, 56, 0.6) transparent;
+    -fx-border-color: transparent transparent -line transparent;
 }
-.table-row-cell:hover { -fx-background-color: rgba(38, 38, 50, 0.7); }
+.table-row-cell:hover { -fx-background-color: #182340; }
 .table-row-cell:selected {
-    -fx-background-color: rgba(250, 23, 74, 0.18);
+    -fx-background-color: rgba(34, 211, 238, 0.12);
 }
 .table-cell {
     -fx-text-fill: -text;
-    -fx-padding: 0 10;
+    -fx-padding: 0 12;
     -fx-alignment: CENTER_LEFT;
 }
-.table-view .column-header .label { -fx-alignment: CENTER_LEFT; }
 
 .stat-tile {
     -fx-background-color: -raised;
     -fx-border-color: -line;
     -fx-border-width: 1;
-    -fx-background-radius: 6;
-    -fx-border-radius: 6;
-    -fx-padding: 14 18;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-padding: 16 20;
 }
 .stat-tile:hover {
-    -fx-border-color: -line-bright;
+    -fx-border-color: -accent;
     -fx-background-color: -raised-hover;
 }
 .stat-value {
     -fx-font-size: 2.1em;
     -fx-font-weight: 800;
-    -fx-text-fill: #FFFFFF;
+    -fx-text-fill: -text;
     -fx-font-family: "Cascadia Mono", "Consolas", monospace;
 }
 
 .context-menu, .menu-button .context-menu {
     -fx-background-color: -raised;
     -fx-border-color: -line;
-    -fx-background-radius: 6;
-    -fx-border-radius: 6;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 16, 0, 0, 8);
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 18, 0, 0, 8);
 }
 .menu-item:focused {
-    -fx-background-color: #262632;
+    -fx-background-color: #182340;
 }
 .menu-item .label { -fx-text-fill: -text; }
 .menu-button {
     -fx-background-color: transparent;
     -fx-text-fill: -muted;
-    -fx-background-radius: 6;
+    -fx-background-radius: 10;
     -fx-cursor: hand;
 }
 .menu-button:hover {
@@ -509,10 +490,10 @@
     -fx-border-width: 1 0 0 0;
 }
 .tooltip {
-    -fx-background-color: #1C1C24;
+    -fx-background-color: #16213F;
     -fx-text-fill: -text;
-    -fx-border-color: -gx-red;
-    -fx-border-radius: 4;
-    -fx-background-radius: 4;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0, 0, 2);
+    -fx-border-color: -line;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0, 0, 2);
 }

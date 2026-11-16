@@ -155,17 +155,17 @@ public class DashboardPage implements AdminPage {
         GraphicsContext g = gauge.getGraphicsContext2D();
         g.clearRect(0, 0, 150, 150);
         g.setLineWidth(14);
-        g.setStroke(Color.web("#252530"));
+        g.setStroke(Color.web("#182340"));
         g.strokeArc(17, 17, 116, 116, 0, 360, ArcType.OPEN);
         double frac = m.isEmpty() ? 0 : (double) pass / m.size();
-        g.setStroke(last.isEmpty() ? Color.web("#71717A") : frac == 1 ? Color.web("#22C55E") : frac >= 0.6 ? Color.web("#F59E0B") : Color.web("#FA174A"));
+        g.setStroke(last.isEmpty() ? Color.web("#5F6C8C") : frac == 1 ? Color.web("#34D399") : frac >= 0.6 ? Color.web("#FBBF24") : Color.web("#FB7185"));
         g.strokeArc(17, 17, 116, 116, 90, -360 * frac, ArcType.OPEN);
-        g.setFill(Color.web("#F4F4F6"));
+        g.setFill(Color.web("#E8ECF8"));
         g.setFont(javafx.scene.text.Font.font("System", javafx.scene.text.FontWeight.BOLD, 30));
         String txt = last.isEmpty() ? "-" : pass + "/" + m.size();
         g.fillText(txt, 75 - txt.length() * 9, 82);
         g.setFont(javafx.scene.text.Font.font("System", 11));
-        g.setFill(Color.web("#A1A1AA"));
+        g.setFill(Color.web("#93A0C0"));
         g.fillText("mục đạt", 46, 102);
     }
 
@@ -182,7 +182,7 @@ public class DashboardPage implements AdminPage {
         List<ThroughputPointDTO> b = last.size() > 1 && last.get(1).ok() ? last.get(1).throughput() : List.of();
         int n = Math.max(a.size(), b.size());
         if (n < 2) {
-            g.setFill(Color.web("#71717A"));
+            g.setFill(Color.web("#5F6C8C"));
             g.fillText("Chưa có dữ liệu: chưa chi nhánh nào phản hồi.", left, h / 2);
             return;
         }
@@ -195,9 +195,9 @@ public class DashboardPage implements AdminPage {
         double max = 1;
         for (int i = 0; i < n; i++) max = Math.max(max, Math.max(sent[i], Math.max(ab[i], ba[i])));
         max = Math.ceil(max / 4) * 4;
-        g.setStroke(Color.web("#252530"));
+        g.setStroke(Color.web("#24304F"));
         g.setLineWidth(1);
-        g.setFill(Color.web("#71717A"));
+        g.setFill(Color.web("#5F6C8C"));
         for (int k = 0; k <= 4; k++) {
             double y = top + ph - ph * k / 4;
             g.strokeLine(left, y, left + pw, y);
@@ -205,15 +205,15 @@ public class DashboardPage implements AdminPage {
         }
         g.fillText("30 phút trước", left, h - 10);
         g.fillText("nay", left + pw - 20, h - 10);
-        plot(g, sent, max, left, top, pw, ph, Color.web("#FA174A"));
-        plot(g, ab, max, left, top, pw, ph, Color.web("#00F0FF"));
-        plot(g, ba, max, left, top, pw, ph, Color.web("#22C55E"));
+        plot(g, sent, max, left, top, pw, ph, Color.web("#6366F1"));
+        plot(g, ab, max, left, top, pw, ph, Color.web("#22D3EE"));
+        plot(g, ba, max, left, top, pw, ph, Color.web("#34D399"));
         double lx = left;
         double step = Math.min(140, pw / 3);
-        for (Object[] leg : new Object[][]{{"Ghi sổ", "#9D8CFF"}, {"A sang B", "#3B82F6"}, {"B sang A", "#22C55E"}}) {
+        for (Object[] leg : new Object[][]{{"Ghi sổ", "#6366F1"}, {"A sang B", "#22D3EE"}, {"B sang A", "#34D399"}}) {
             g.setFill(Color.web((String) leg[1]));
             g.fillOval(lx, 8, 9, 9);
-            g.setFill(Color.web("#A1A1AA"));
+            g.setFill(Color.web("#93A0C0"));
             g.fillText((String) leg[0], lx + 14, 16);
             lx += step;
         }
