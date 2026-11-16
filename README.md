@@ -1,7 +1,25 @@
-# NEXUS Banking (RMI) - Distributed Core-Banking & ATM Cluster
+# 🏦 NEXUS Banking (RMI) - Distributed Core-Banking & ATM Cluster
+
+[![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Java RMI](https://img.shields.io/badge/Architecture-Java_RMI-007396?style=for-the-badge&logo=java&logoColor=white)]()
+[![MySQL](https://img.shields.io/badge/MySQL-8.0_InnoDB-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![JavaFX](https://img.shields.io/badge/GUI-JavaFX_21-2E7D32?style=for-the-badge&logo=javafx&logoColor=white)]()
+[![Status](https://img.shields.io/badge/Cluster-Active--Active-success?style=for-the-badge)]()
+
+> 🌟 **Project #3 trong Bộ ba Hệ thống Phân tán NEXUS (The NEXUS Distributed Systems Trilogy):**
+> 
+> * 💬 **NEXUS Chat (RMI)**
+> * 🎬 **NEXUS Cinema (RMI)**
+> * 🏦 **NEXUS Banking (RMI)** *(Dự án này)*: Hệ thống Ngân hàng lõi & ATM phân tán 2 chi nhánh đa nguồn (Active-Active Multi-Master), giải quyết trọn vẹn:
+>   * ⚡ **Giao dịch phân tán & Chuẩn ACID**: Trừ tiền nguyên tử, bút toán kép (`Double-entry Ledger`).
+>   * 🛡️ **Chống chi tiêu trùng (Double Spending & Idempotency)**: Đảm bảo giao dịch chỉ thực thi duy nhất 1 lần khi mạng chập chờn hoặc retry.
+>   * 🔄 **Chịu lỗi đứt cáp (CAP Theorem / High Availability)**: Transactional Outbox Pattern + Catch-up Replication tự động kéo bù số dư.
+>   * ⛓️ **Chuỗi kiểm toán bất biến (Audit Hash-Chain)**: Xâu chuỗi nhật ký bằng mã băm SHA-256 (tamper-evident) phát hiện ngay lập tức nếu CSDL bị sửa trộm.
+
+---
 
 Đồ án môn Hệ phân tán: hệ thống **ngân hàng phân tán 2 chi nhánh active-active** (Hà Nội - TP.HCM) trên Java 21, Maven multi-module,
-Java RMI (TLS/mTLS tùy chọn), MySQL/MariaDB, JavaFX. Tái cấu trúc từ `nexus_chat-RMI` (giữ nguyên lõi phân tán, đổi toàn bộ nghiệp vụ).
+Java RMI (TLS/mTLS tùy chọn), MySQL/MariaDB, JavaFX.
 
 | Module | Vai trò |
 |---|---|
@@ -26,16 +44,16 @@ Java RMI (TLS/mTLS tùy chọn), MySQL/MariaDB, JavaFX. Tái cấu trúc từ `n
 * **Kiểm toán bất biến**: `audit_log` liên kết hash SHA-256 (+ trigger append-only), Control xác minh được chuỗi.
 * **Bảo mật**: PIN băm PBKDF2-HMAC-SHA256 + salt, chống dò PIN (khóa tạm), phiên chỉ thao tác trên tài khoản của chính mình, admin token, secret liên chi nhánh, TLS/mTLS tùy chọn.
 
-## Chạy nhanh
-Xem **`KICH_BAN_DEMO_NGAN_HANG_2_LAPTOP.md`** (build, CSDL, chạy 2 node, 3 kịch bản demo + kịch bản bổ sung).
+## Hướng dẫn Chạy & Demo Chi tiết
+👉 **Xem file [`HUONG_DAN_CHAY_DEMO.md`](HUONG_DAN_CHAY_DEMO.md)** (Hướng dẫn từng bước chạy trên 1 máy, trên 2 laptop với máy ảo VirtualBox, và 5 kịch bản demo chi tiết).
 
+```powershell
+# Chạy nhanh trên 1 máy:
+.\scripts\run-node-a.ps1 -Db       # Node A (Hà Nội - Port 1099)
+.\scripts\run-node-b.ps1 -Db       # Node B (TP.HCM - Port 2099)
+.\scripts\run-control.ps1          # NEXUS CONTROL (Mã token: nexus-admin-secret)
+.\scripts\run-client.ps1           # NEXUS BANKING ATM (PIN demo: 123456)
 ```
-mvn clean verify                    # build + test
-scripts\init-db.sql                 # tạo 2 CSDL (mỗi chi nhánh một CSDL)
-scripts\run-node-a.ps1 -Db ...      # Node A        scripts\run-node-b.ps1 -Db ...   # Node B
-scripts\run-control.ps1             # NEXUS CONTROL scripts\run-client.ps1           # NEXUS BANKING
-```
-Không có MySQL? Chạy node không `-Db` (chế độ RAM demo, **không bền vững**, được ghi rõ trong log/UI).
 
 ## Lược đồ CSDL (`banking-server/src/main/resources/db/db-schema.sql`)
 `bank_accounts`, `bank_transactions` (sổ cái), `replication_outbox`, `replication_state`, `origin_sequences`, `audit_log`.
